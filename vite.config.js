@@ -19,7 +19,7 @@ export default defineConfig({
       manifest: {
         name: 'Flight Games',
         short_name: 'Flight Games',
-        description: 'Three offline games for the flight.',
+        description: 'Six offline games for the flight: strategy, discovery, and quiet puzzles.',
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#0e1420',

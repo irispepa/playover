@@ -32,3 +32,7 @@ Deferred items found while building; none block play.
 - First-wave coach can sit over the core tile on 375x667 screens; it hides once you dismiss it or start wave 1.
 - Ability name labels show only before wave 1 (and until the first hero touch); there is no way to bring them back.
 - The "Next" wave strip and the hero card are tappable divs, not buttons, so they are not reachable by keyboard.
+
+## New pocket games
+- Play Odd Crown on a real phone for longer sessions; tune opponent pacing from human feedback.
+- Verify all three new games in iPhone Safari standalone: physical safe areas, touch accuracy, battery use and frame rate.

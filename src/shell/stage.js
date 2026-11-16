@@ -59,6 +59,7 @@ export function createStage(root, { antialias = true, background = 0x0e1420 } = 
       cancelAnimationFrame(raf);
       ro.disconnect();
       scene.traverse((o) => {
+        if (o.isInstancedMesh) o.dispose();
         if (o.geometry) o.geometry.dispose();
         if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => {
           for (const v of Object.values(m)) if (v && v.isTexture) v.dispose();
