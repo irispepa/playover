@@ -33,7 +33,9 @@ const STICK_R = 56;
 export default {
   start(ctx) {
     const stage = createStage(ctx.root, { background: 0x0e1420 });
-    const settings = Object.assign({ autoWaves: true, shake: true, paths: true, seenHow: false, last: {} }, ctx.storage.get('settings', {}) || {});
+    const stored = ctx.storage.get('settings', {}) || {};
+    // seenCoach: the first-wave pointers. Players who already saw the guide before the coach existed skip it.
+    const settings = Object.assign({ autoWaves: true, shake: true, paths: true, seenHow: false, seenCoach: !!stored.seenHow, last: {} }, stored);
     const saveSettings = () => ctx.storage.set('settings', settings);
     const records = Object.assign({}, ctx.storage.get('records', {}) || {});
     const renderer = createRenderer(stage, { shake: settings.shake });
@@ -56,7 +58,7 @@ export default {
       callWave: () => {
         if (!s) return;
         const b = callWave(s);
-        if (s.wave === 1 && !c.hintSeen) { /* first wave */ }
+        if (s.wave >= 1) coachDone();
         ctx.audio.play(b > 0 ? 'coin' : 'tap');
         if (b > 0) hud.toast(`Called early: +${b} gold`, 'good');
       },
@@ -109,10 +111,12 @@ export default {
       restart: () => { hud.closeModal(); startRun({ ...run, seed: run.mode === 'daily' || run.mode === 'seed' ? run.seed : randomSeed() }); },
       exitToMenu: () => { save(); hud.closeModal(); s = null; showTitle(); },
       toTitle: () => { hud.closeModal(); s = null; showTitle(); },
+      coachDone: () => coachDone(),
       showWaveInfo: () => { if (!s) return; paused = true; hud.showWaveInfo(s, () => { paused = false; }); },
     });
     renderer.setShowPaths(settings.paths);
 
+    function coachDone() { if (!settings.seenCoach) { settings.seenCoach = true; saveSettings(); } }
     const heroWeaponName = (w) => (w ? w[0].toUpperCase() + w.slice(1) : '');
 
     // ---------------------------------------------------------------- runs
@@ -121,8 +125,10 @@ export default {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
     function recordKey(r) { return r.mode === 'op' ? 'op' : r.mode === 'daily' ? 'daily' : r.mode === 'seed' ? 'seed' : `std-${r.difficulty}`; }
+    const esc = (t) => String(t).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    // Returns HTML: the HUD renders it with innerHTML, so the player's seed text is escaped.
     function runLabel(r, st) {
-      const m = r.mode === 'op' ? 'Overpowered' : r.mode === 'daily' ? `Daily ${r.date || ''}` : r.mode === 'seed' ? `Seed "${r.seedText}"` : DIFFICULTY[r.difficulty].name;
+      const m = r.mode === 'op' ? 'Overpowered' : r.mode === 'daily' ? `Daily ${r.date || ''}` : r.mode === 'seed' ? `Seed "${esc(r.seedText)}"` : DIFFICULTY[r.difficulty].name;
       return `${m} · ${ARCHETYPES[st ? st.archetype : r.archetype] ? ARCHETYPES[st ? st.archetype : r.archetype].name : 'Random'}`;
     }
     function bestLabel() {
@@ -147,7 +153,7 @@ export default {
       s.autoWaves = settings.autoWaves;
       afterLoad();
       save();
-      if (!settings.seenHow) { settings.seenHow = true; saveSettings(); paused = true; hud.showHow(() => { paused = false; }); }
+      if (!settings.seenHow) { settings.seenHow = true; saveSettings(); paused = true; hud.showHow(() => { paused = false; }, { doneLabel: 'Start playing' }); }
     }
     function afterLoad() {
       if (import.meta.env.DEV) window.__bm = { get s() { return s; }, canBuild, build, upgrade, callWave }; // dev-only handle for automated play tests
@@ -179,7 +185,7 @@ export default {
     function savedLabel() {
       const o = ctx.storage.get('save', null);
       if (!o || o.v !== SAVE_VERSION || !o.state || !o.run) return null;
-      return `wave ${o.state.wave} · ${runLabel(o.run, o.state)}`;
+      return `Wave ${o.state.wave} · ${runLabel(o.run, o.state)}`;
     }
     function showTitle() {
       s = null;
@@ -432,7 +438,7 @@ export default {
       const ev = s.events;
       for (let i = 0; i < ev.length; i++) {
         switch (ev[i]) {
-          case 'wave': break;
+          case 'wave': coachDone(); break;
           case 'boss': {
             const g = s.spawns.find((x) => ENEMIES[x.type].boss);
             hud.toast(`Boss wave ${s.wave}: ${g ? ENEMIES[g.type].name : 'boss'}`, 'boss');

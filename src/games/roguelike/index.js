@@ -125,6 +125,7 @@ export default {
       R.setGame(G);
       R.snapCamera();
       U.setClass(run.classId);
+      U.setFirstRun(meta.runs === 0 && run.floor === 1);
       U.close();
       U.setPlaying(true);
       input.setEnabled(true);
@@ -150,7 +151,7 @@ export default {
         meta.seenHowTo = true;
         saveMeta();
         pendingRun = r;
-        U.showHowTo('howstart');
+        U.showHowTo('howstart', r.classId);
         return;
       }
       beginRun(r);
@@ -162,6 +163,7 @@ export default {
       syncRunStats(meta, run, prevStats);
       run.floor++;
       run.floorState = null;
+      U.setFirstRun(false);
       const P = run.P;
       P.hp = Math.min(P.st.maxHp, P.hp + P.st.maxHp * 0.1);
       P.energy = P.st.energyMax;
@@ -227,7 +229,7 @@ export default {
       seeddaily: () => U.setSeedValue(dailySeedLabel()),
       start: () => startNew(selClass, U.seedValue()),
       records: () => U.showRecords(meta),
-      howto: () => U.showHowTo(mode === 'play' ? 'pause' : 'back'),
+      howto: () => U.showHowTo(mode === 'play' ? 'pause' : 'back', mode === 'play' && run ? run.classId : selClass),
       howstart: () => { const r = pendingRun; pendingRun = null; if (r) beginRun(r); else showTitle(); },
       back: () => showTitle(),
       title: () => showTitle(),

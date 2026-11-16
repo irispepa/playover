@@ -6,6 +6,7 @@ import {
 import { perkById, tagCounts, previewEquip, itemStatLines, COMPARE_KEYS, COMPARE_INFO, formatStat, sellValue } from './items.js';
 import { xpNeed } from './sim.js';
 import { classUnlocked, bestiaryList } from './save.js';
+import { howToPages } from './howto.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const hex = (n) => `#${(n >>> 0).toString(16).padStart(6, '0')}`;
@@ -59,15 +60,17 @@ export function createUI(root, H) {
 
   // ---------------------------------------------------------------- controls
   const ctl = el('div', 'dv-ctl', `
-    <button class="dv-act dv-dash" aria-label="Dash">${icon('dash', 30)}<i class="dv-cd"></i></button>
-    <button class="dv-act dv-ab dv-ab1" aria-label="Ability 1"><span class="dv-abi"></span><i class="dv-cd"></i><em class="dv-cost"></em></button>
-    <button class="dv-act dv-ab dv-ab2" aria-label="Ability 2"><span class="dv-abi"></span><i class="dv-cd"></i><em class="dv-cost"></em></button>
-    <button class="dv-act dv-small dv-pot" aria-label="Potion">${icon('potion', 22, '#ff6070')}<i class="dv-n"></i></button>
-    <button class="dv-act dv-small dv-bomb" aria-label="Bomb">${icon('bomb', 22, '#c8ccd8')}<i class="dv-n"></i></button>
-    <button class="dv-ctxbtn">${icon('hand', 18)}<span></span></button>`);
+    <button class="dv-act dv-dash" aria-label="Dash">${icon('dash', 30)}<i class="dv-cd"></i><span class="dv-lbl">Dash</span></button>
+    <button class="dv-act dv-ab dv-ab1" aria-label="Ability 1"><span class="dv-abi"></span><i class="dv-cd"></i><em class="dv-cost"></em><span class="dv-lbl"></span></button>
+    <button class="dv-act dv-ab dv-ab2" aria-label="Ability 2"><span class="dv-abi"></span><i class="dv-cd"></i><em class="dv-cost"></em><span class="dv-lbl"></span></button>
+    <button class="dv-act dv-small dv-pot" aria-label="Potion">${icon('potion', 22, '#ff6070')}<i class="dv-n"></i><span class="dv-lbl">Potion</span></button>
+    <button class="dv-act dv-small dv-bomb" aria-label="Bomb">${icon('bomb', 22, '#c8ccd8')}<i class="dv-n"></i><span class="dv-lbl">Bomb</span></button>
+    <button class="dv-ctxbtn">${icon('hand', 18)}<span></span></button>
+    <div class="dv-movehint" aria-hidden="true">${icon('hand', 18)}<span>Drag anywhere low on the screen to move</span></div>`);
   ui.appendChild(ctl);
   const dashBtn = $('.dv-dash', ctl), ab1Btn = $('.dv-ab1', ctl), ab2Btn = $('.dv-ab2', ctl), potBtn = $('.dv-pot', ctl), bombBtn = $('.dv-bomb', ctl), ctxBtn = $('.dv-ctxbtn', ctl);
-  const potN = $('.dv-n', potBtn), bombN = $('.dv-n', bombBtn), ctxTxt = $('span', ctxBtn);
+  const potN = $('.dv-n', potBtn), bombN = $('.dv-n', bombBtn), ctxTxt = $('.dv-ctxbtn > span', ctl);
+  const cost1 = $('.dv-cost', ab1Btn), cost2 = $('.dv-cost', ab2Btn);
 
   const nums = el('div', 'dv-nums');
   ui.appendChild(nums);
@@ -81,6 +84,7 @@ export function createUI(root, H) {
   ui.appendChild(ov);
 
   const U = {
+    actions: {},
     root: ui, touch, joy, knob, dashBtn, ab1Btn, ab2Btn, potBtn, bombBtn, ctxBtn, pauseBtn: $('.dv-pause'), bagBtn: $('.dv-bagbtn'),
     overlay: null, cache: {}, timers: new Set(), numPool: [], numActive: [], miniBig: false, miniT: 0, mapV: -1, mapCanvas: null, mapData: null, curG: null,
   };
@@ -105,6 +109,9 @@ export function createUI(root, H) {
     $('.dv-abi', ab2Btn).innerHTML = icon(ABILITIES[a2].icon, 26);
     ab1Btn.setAttribute('aria-label', ABILITIES[a1].name);
     ab2Btn.setAttribute('aria-label', ABILITIES[a2].name);
+    $('.dv-lbl', ab1Btn).textContent = ABILITIES[a1].name;
+    $('.dv-lbl', ab2Btn).textContent = ABILITIES[a2].name;
+    U.classId = classId;
     U.cache = {};
   };
 
@@ -135,6 +142,9 @@ export function createUI(root, H) {
     setCd(ab2Btn, 'cd2', P.cd2 / (a2.cd * (1 - st.cdr)));
     setClass(ab1Btn, 'lo1', 'dv-noen', P.energy < a1.energy * red);
     setClass(ab2Btn, 'lo2', 'dv-noen', P.energy < a2.energy * red);
+    setText(cost1, 'c1', `${Math.round(a1.energy * red)}`);
+    setText(cost2, 'c2', `${Math.round(a2.energy * red)}`);
+    if (U.firstRun && !U.moved && P.moving) { U.moved = true; ui.classList.add('dv-moved'); }
     // Context action.
     const lbl = G.ctxLabel && G.ctx ? G.ctxLabel : '';
     if (U.cache.ctx !== lbl) { U.cache.ctx = lbl; ctxTxt.textContent = lbl; ctxBtn.classList.toggle('dv-show', !!lbl); }
@@ -309,6 +319,12 @@ export function createUI(root, H) {
   U.setPlaying = (on) => {
     ui.classList.toggle('dv-playing', on);
   };
+  // First floor of a player's first run: name the buttons and show how to move until they do.
+  U.setFirstRun = (on) => {
+    U.firstRun = on; U.moved = false;
+    ui.classList.toggle('dv-firstrun', on);
+    ui.classList.remove('dv-moved');
+  };
 
   // ---------------------------------------------------------------- overlays
   function open(html, cls = '') {
@@ -329,21 +345,43 @@ export function createUI(root, H) {
     if (H.tap) H.tap();
     if (U.actions[act]) U.actions[act](arg, b);
   });
-  U.actions = {};
 
   // ---- title
+  const EMBLEM = `<svg class="dv-emblem" viewBox="0 0 200 132" aria-hidden="true">
+    <defs>
+      <radialGradient id="dv-glow"><stop offset="0" stop-color="#ffb347" stop-opacity="0.5"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>
+      <radialGradient id="dv-deep" cx="0.5" cy="0.7" r="0.7"><stop offset="0" stop-color="#3a2810"/><stop offset="1" stop-color="#090705"/></radialGradient>
+    </defs>
+    <circle class="dv-torchglow" cx="30" cy="50" r="30" fill="url(#dv-glow)"/>
+    <circle class="dv-torchglow dv-tg2" cx="170" cy="50" r="30" fill="url(#dv-glow)"/>
+    <path d="M44 112V58a56 56 0 0 1 112 0v54z" fill="#1a1e29" stroke="#3a4152" stroke-width="2"/>
+    <path d="M54 112V60a46 46 0 0 1 92 0v52z" fill="none" stroke="#2c3240" stroke-width="1.5" stroke-dasharray="9 3"/>
+    <path d="M64 112V62a36 36 0 0 1 72 0v50z" fill="url(#dv-deep)" stroke="#f0b44c" stroke-width="2.5"/>
+    <circle cx="100" cy="70" r="15" fill="none" stroke="#f0b44c" stroke-width="2.5"/>
+    <path d="M100 55v30M85 70h30M89.4 59.4l21.2 21.2M110.6 59.4 89.4 80.6" stroke="#f0b44c" stroke-width="1.6" opacity="0.75"/>
+    <circle cx="100" cy="70" r="4.5" fill="#f0b44c"/>
+    <path d="M70 112h60l-4 5H74z" fill="#2a2f3d"/><path d="M74 117h52l-5 6H79z" fill="#3a4050"/><path d="M79 123h42l-6 7H85z" fill="#4c5366"/>
+    <path d="M27 62h6l-1 14h-4z" fill="#5a4a3a"/><path d="M30 46c3 4 5 6 5 10a5 5 0 0 1-10 0c0-4 2-6 5-10z" fill="#ffb347"/><path d="M30 52c1.5 2 2.5 3 2.5 5a2.5 2.5 0 0 1-5 0c0-2 1-3 2.5-5z" fill="#fff0c0"/>
+    <path d="M167 62h6l-1 14h-4z" fill="#5a4a3a"/><path d="M170 46c3 4 5 6 5 10a5 5 0 0 1-10 0c0-4 2-6 5-10z" fill="#ffb347"/><path d="M170 52c1.5 2 2.5 3 2.5 5a2.5 2.5 0 0 1-5 0c0-2 1-3 2.5-5z" fill="#fff0c0"/>
+  </svg>`;
   U.showTitle = (info) => {
+    const m = info.meta;
     const cont = info.save ? `<button class="dv-big dv-primary" data-act="continue">${icon('stairs', 20)}<span>Continue<small>Floor ${info.save.floor} · ${esc(CLASSES[info.save.classId].name)} · Lv ${info.save.P.level}</small></span></button>` : '';
+    const stats = m.deepest || m.runs
+      ? `<div class="dv-tstats"><div><b>${m.deepest || 0}</b><small>Deepest floor</small></div><div><b>${m.runs}</b><small>${m.runs === 1 ? 'Run' : 'Runs'}</small></div><div><b>${m.kills}</b><small>Kills</small></div></div>`
+      : '<div class="dv-foot">Every floor is new. Death is permanent.</div>';
     open(`
-      <div class="dv-title"><div class="dv-logo">DEEP<span>VAULT</span></div><div class="dv-tag">A real-time dungeon descent</div></div>
+      <div class="dv-title">${EMBLEM}<div class="dv-logo">DEEP<span>VAULT</span></div><div class="dv-tag">A real-time dungeon descent</div></div>
       <div class="dv-menu">
         ${cont}
         <button class="dv-big ${info.save ? '' : 'dv-primary'}" data-act="newrun">${icon('sword', 20)}<span>New run${info.save ? '<small>Replaces your saved run</small>' : ''}</span></button>
-        <button class="dv-big" data-act="records">${icon('crown', 20)}<span>Records &amp; bestiary</span></button>
-        <button class="dv-big" data-act="howto">${icon('scroll', 20)}<span>How to play</span></button>
+        <div class="dv-mrow">
+          <button class="dv-big" data-act="howto">${icon('scroll', 20)}<span>How to play</span></button>
+          <button class="dv-big" data-act="records">${icon('crown', 20)}<span>Records</span></button>
+        </div>
         <button class="dv-big dv-ghost" data-act="exit">${icon('close', 18)}<span>Back to games</span></button>
       </div>
-      <div class="dv-foot">${info.meta.deepest ? `Deepest floor ${info.meta.deepest} · ${info.meta.runs} runs · ${info.meta.kills} kills` : 'Every floor is new. Death is permanent. Descend.'}</div>`, 'dv-titleov');
+      ${stats}`, 'dv-titleov');
   };
 
   // ---- class select
@@ -354,20 +392,22 @@ export function createUI(root, H) {
       const unlocked = classUnlocked(meta, id);
       const best = meta.bestByClass[id] || 0;
       const abs = c.abilities.map((a) => `<span class="dv-abl">${icon(ABILITIES[a].icon, 14)}${esc(ABILITIES[a].name)}</span>`).join('');
-      cards += `<button class="dv-class ${sel === id ? 'dv-sel' : ''} ${unlocked ? '' : 'dv-locked'}" data-act="${unlocked ? 'pickclass' : 'lockedclass'}" data-arg="${id}" style="--cc:${hex(c.color)}">
-        <div class="dv-cn">${unlocked ? '' : icon('lock', 14)}${esc(c.name)}</div>
+      const foot = unlocked ? (best ? `Best: floor ${best}` : 'Not yet played') : `${icon('lock', 12)} ${esc(c.unlock.text)} to unlock`;
+      cards += `<button class="dv-class ${sel === id ? 'dv-sel' : ''} ${unlocked ? '' : 'dv-locked'}" aria-pressed="${sel === id}" data-act="${unlocked ? 'pickclass' : 'lockedclass'}" data-arg="${id}" style="--cc:${hex(c.color)}">
+        <div class="dv-cn">${esc(c.name)}${sel === id ? `<i class="dv-cck">${icon('check', 14)}</i>` : ''}</div>
         <div class="dv-cw">${icon(WEAPONS[c.weapon].icon, 14)} ${esc(WEAPONS[c.weapon].name)}</div>
         <div class="dv-cb">${esc(c.blurb)}</div>
         <div class="dv-cab">${abs}</div>
-        <div class="dv-cbest">${unlocked ? (best ? `Best: floor ${best}` : 'Not yet played') : esc(c.unlock.text)}</div>
+        <div class="dv-cbest">${foot}</div>
       </button>`;
     }
     open(`
-      <div class="dv-h"><button class="dv-x" data-act="back">${icon('close', 18)}</button><h2>New run</h2></div>
+      <div class="dv-h"><button class="dv-x" data-act="back" aria-label="Back">${icon('close', 18)}</button><h2>New run</h2></div>
+      <div class="dv-sec">Choose a class</div>
       <div class="dv-classes">${cards}</div>
+      <div class="dv-sec">Seed</div>
       <div class="dv-seed">
-        <label>Seed</label>
-        <input class="dv-seedin" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Random" value="${esc(meta.lastSeedInput || '')}"/>
+        <input class="dv-seedin" aria-label="Seed" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Random" value="${esc(meta.lastSeedInput || '')}"/>
         <button class="dv-pill" data-act="seedrandom">${icon('dice', 16)}Random</button>
         <button class="dv-pill" data-act="seeddaily">Daily</button>
       </div>
@@ -475,7 +515,7 @@ export function createUI(root, H) {
     }
     const perks = Object.keys(P.perks).map((id) => { const p = perkById(id); return `<div class="dv-prow"><b>${esc(p.name)}${P.perks[id] > 1 ? ` ×${P.perks[id]}` : ''}</b><span>${esc(p.desc)}</span></div>`; }).join('') || '<div class="dv-dim">No relics yet. Level up or find a Shrine of Gifts.</div>';
     const panel = open(`
-      <div class="dv-h"><button class="dv-x" data-act="closeinv">${icon('close', 18)}</button><h2>Inventory</h2><span class="dv-gold">${icon('coin', 15, '#ffcc40')} ${P.gold}</span></div>
+      <div class="dv-h"><button class="dv-x" data-act="closeinv" aria-label="Close">${icon('close', 18)}</button><h2>Inventory</h2><span class="dv-gold">${icon('coin', 15, '#ffcc40')} ${P.gold}</span></div>
       <div class="dv-sec">Equipped</div>
       <div class="dv-eq">${slotCell('weapon', 'Weapon')}${slotCell('armor', 'Armour')}${slotCell('trinket1', 'Trinket')}${slotCell('trinket2', 'Trinket')}</div>
       <div class="dv-detail">${detailHTML(G)}</div>
@@ -550,38 +590,87 @@ export function createUI(root, H) {
     return `${itemBlock(it)}<div class="dv-cmp">${cmp}</div><div class="dv-acts">${acts}</div>`;
   }
 
-  // ---- how to play
-  U.showHowTo = (backAct) => {
-    open(`
-      <div class="dv-h"><button class="dv-x" data-act="${backAct}">${icon('close', 18)}</button><h2>How to play</h2></div>
-      <div class="dv-how">
-        <div class="dv-hrow">${icon('hand', 22)}<div><b>Move</b> Put a thumb anywhere on the lower part of the screen and drag. The stick appears under your thumb.</div></div>
-        <div class="dv-hrow">${icon('sword', 22)}<div><b>Attack</b> You strike automatically at the nearest enemy in reach. Melee weapons swing in an arc; bows, staffs and wands shoot.</div></div>
-        <div class="dv-hrow">${icon('dash', 22)}<div><b>Dash</b> The big button. You can't be hurt while dashing, so dash through attacks, not away from them.</div></div>
-        <div class="dv-hrow">${icon('spark', 22)}<div><b>Abilities</b> Two class skills cost energy and recharge. They aim at the nearest enemy.</div></div>
-        <div class="dv-hrow">${icon('eye', 22, '#ff5040')}<div><b>Read the danger</b> Red circles and lines show where an attack will land. Enemies flash red just before they strike. Get out of the red.</div></div>
-        <div class="dv-hrow">${icon('star', 22, '#ffd24a')}<div><b>Relics</b> Every level up lets you choose a relic. Three relics of the same colour unlock a synergy that changes how you play.</div></div>
-        <div class="dv-hrow">${icon('bag', 22)}<div><b>Loot</b> Walk over items to pick them up. Open the bag to compare and equip. Salvage spare gear for gold to spend in shops.</div></div>
-        <div class="dv-hrow">${icon('key', 22, '#ffd24a')}<div><b>Vaults</b> Golden doors need a key found on the same floor. Cracked walls hide secret rooms: push into them or bomb them.</div></div>
-        <div class="dv-hrow">${icon('stairs', 22, '#8fd8ff')}<div><b>Descend</b> Find the glowing stairs. A shop waits on floors 3, 8, 13 and so on. Every fifth floor a boss guards the way.</div></div>
-        <div class="dv-hrow">${icon('skull', 22)}<div><b>Permadeath</b> When you fall, the run ends. Your deepest floors, kills and unlocks stay with you. Your run saves itself on every floor and when you pause.</div></div>
-        <div class="dv-hrow">${icon('map', 22)}<div><b>Map</b> Tap the minimap to see the whole explored floor.</div></div>
-      </div>
-      <button class="dv-big dv-primary" data-act="${backAct}"><span>Got it</span></button>`, 'dv-howov');
+  // ---- how to play: paged guide, one topic per page
+  U.how = null;
+  U.showHowTo = (backAct, classId) => {
+    const keyboard = typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const pages = howToPages(classId || U.classId, keyboard);
+    const n = pages.length;
+    const finish = backAct === 'howstart' ? 'Descend' : 'Got it';
+    const body = pages.map((pg, i) => `<section class="dv-hpage" aria-roledescription="page" aria-label="${i + 1} of ${n}: ${esc(pg.title)}" ${i ? 'aria-hidden="true"' : ''}>
+        <div class="dv-hstep">${i + 1} of ${n}</div><h3>${esc(pg.title)}</h3>${pg.pic}
+        <ul class="dv-hpts">${pg.points.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>${pg.extra || ''}</section>`).join('');
+    const panel = open(`
+      <div class="dv-h">${backAct === 'howstart'
+        ? `<h2>How to play</h2><button class="dv-pill dv-skip" data-act="howstart">Skip</button>`
+        : `<button class="dv-x" data-act="${backAct}" aria-label="Close">${icon('close', 18)}</button><h2>How to play</h2>`}</div>
+      <div class="dv-hwrap"><div class="dv-htrack">${body}</div></div>
+      <div class="dv-dots" aria-hidden="true">${pages.map(() => '<i></i>').join('')}</div>
+      <div class="dv-hnav">
+        <button class="dv-big dv-hprev" data-act="howprev">${icon('down', 16)}<span>Back</span></button>
+        <button class="dv-big dv-primary dv-hnext" data-act="hownext"><span>Next</span>${icon('down', 16)}</button>
+        <button class="dv-big dv-primary dv-hdone" data-act="${backAct}"><span>${finish}</span></button>
+      </div>`, 'dv-howov');
+    U.how = { i: 0, n, panel };
+    // Swipe between pages.
+    const wrap = panel.querySelector('.dv-hwrap');
+    let sx = 0, sy = 0, sid = -1;
+    wrap.addEventListener('pointerdown', (e) => { sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
+    const up = (e) => {
+      if (e.pointerId !== sid) return;
+      sid = -1;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) howGo(U.how.i + (dx < 0 ? 1 : -1));
+    };
+    wrap.addEventListener('pointerup', up);
+    wrap.addEventListener('pointercancel', () => { sid = -1; });
+    howGo(0);
   };
+  function howGo(i) {
+    const h = U.how;
+    if (!h || U.overlay !== 'dv-howov') return;
+    i = Math.max(0, Math.min(h.n - 1, i));
+    const moved = i !== h.i;
+    h.i = i;
+    const p = h.panel;
+    p.querySelector('.dv-htrack').style.transform = `translateX(${-100 * i}%)`;
+    p.querySelectorAll('.dv-hpage').forEach((s, k) => { if (k === i) { s.removeAttribute('aria-hidden'); s.scrollTop = 0; } else s.setAttribute('aria-hidden', 'true'); });
+    p.querySelectorAll('.dv-dots i').forEach((d, k) => d.classList.toggle('dv-on', k === i));
+    const last = i === h.n - 1;
+    p.querySelector('.dv-hprev').disabled = i === 0;
+    p.querySelector('.dv-hnext').hidden = last;
+    p.querySelector('.dv-hdone').hidden = !last;
+    if (moved) {
+      const f = document.activeElement;
+      if (f && f.closest && f.closest('.dv-hnav') && f.hidden) (last ? p.querySelector('.dv-hdone') : p.querySelector('.dv-hnext')).focus();
+    }
+  }
+  U.actions.howprev = () => howGo(U.how.i - 1);
+  U.actions.hownext = () => howGo(U.how.i + 1);
+  const onHowKey = (e) => {
+    if (U.overlay !== 'dv-howov' || !U.how) return;
+    if (e.key === 'ArrowRight') { howGo(U.how.i + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { howGo(U.how.i - 1); e.preventDefault(); }
+  };
+  window.addEventListener('keydown', onHowKey);
 
   // ---- records
   U.showRecords = (meta) => {
     const best = CLASS_ORDER.map((id) => `<div class="dv-srow">${icon(WEAPONS[CLASSES[id].weapon].icon, 15)}<span>${esc(CLASSES[id].name)}</span><b>${meta.bestByClass[id] ? `floor ${meta.bestByClass[id]}` : classUnlocked(meta, id) ? '—' : 'locked'}</b></div>`).join('');
     const list = bestiaryList(meta);
+    const seen = list.filter((b) => b.seen).length;
+    const played = meta.runs > 0 || meta.deepest > 0 || seen > 0;
     const beasts = list.map((b) => `<div class="dv-beast ${b.seen ? '' : 'dv-unseen'}"><i style="background:${hex(b.color)}"></i><span>${b.seen ? esc(b.name) : '???'}</span>${b.boss ? icon('crown', 12, '#ffd24a') : ''}<b>${b.kills || ''}</b></div>`).join('');
-    const hist = meta.history.slice(0, 15).map((h) => `<div class="dv-hist"><span>${esc(CLASSES[h.cls] ? CLASSES[h.cls].name : h.cls)} · Lv ${h.level}</span><b>Floor ${h.floor}</b><small>${h.kills} kills · ${fmtTime(h.time)} · ${esc(h.by === 'abandoned' ? 'abandoned' : `slain by ${h.by}`)} · seed ${esc(h.seed)}</small></div>`).join('') || '<div class="dv-dim">No runs yet.</div>';
-    open(`
-      <div class="dv-h"><button class="dv-x" data-act="back">${icon('close', 18)}</button><h2>Records</h2></div>
-      <div class="dv-pinfo"><span>${icon('stairs', 14)} Deepest ${meta.deepest || 0}</span><span>${icon('skull', 14)} ${meta.kills} kills</span><span>${icon('star', 14)} ${meta.elites} elites</span><span>${icon('crown', 14)} ${meta.bosses} bosses</span><span>${icon('dice', 14)} ${meta.runs} runs</span></div>
+    const hist = meta.history.slice(0, 15).map((h) => `<div class="dv-hist"><span>${esc(CLASSES[h.cls] ? CLASSES[h.cls].name : h.cls)} · Lv ${h.level}</span><b>Floor ${h.floor}</b><small>${h.kills} kills · ${fmtTime(h.time)} · ${esc(h.by === 'abandoned' ? 'abandoned' : `slain by ${h.by}`)} · seed ${esc(h.seed)}</small></div>`).join('');
+    const body = played ? `
+      <div class="dv-pinfo"><span>${icon('stairs', 14)} Deepest ${meta.deepest || 0}</span><span>${icon('skull', 14)} ${meta.kills} kills</span><span>${icon('star', 14)} ${meta.elites} elites</span><span>${icon('crown', 14)} ${meta.bosses} bosses</span><span>${icon('dice', 14)} ${meta.runs} ${meta.runs === 1 ? 'run' : 'runs'}</span></div>
       <div class="dv-sec">Best floor by class</div><div class="dv-stats">${best}</div>
-      <div class="dv-sec">Bestiary <small>${list.filter((b) => b.seen).length}/${list.length}</small></div><div class="dv-beasts">${beasts}</div>
-      <div class="dv-sec">Recent runs</div><div class="dv-hists">${hist}</div>
+      <div class="dv-sec">Bestiary <small>${seen}/${list.length}</small></div>${seen ? `<div class="dv-beasts">${beasts}</div>` : `<div class="dv-dim">No monsters met yet.</div>`}
+      ${hist ? `<div class="dv-sec">Recent runs</div><div class="dv-hists">${hist}</div>` : ''}`
+      : `<div class="dv-empty1">${icon('crown', 28, '#55607a')}<p>No runs yet. Your deepest floors, kills and the monsters you meet are recorded here.</p></div>`;
+    open(`
+      <div class="dv-h"><button class="dv-x" data-act="back" aria-label="Back">${icon('close', 18)}</button><h2>Records</h2></div>
+      ${body}
       <button class="dv-big" data-act="back"><span>Back</span></button>`, 'dv-recov');
   };
 
@@ -595,7 +684,7 @@ export function createUI(root, H) {
     ].map(([ic, l, v]) => `<div class="dv-srow">${icon(ic, 15)}<span>${l}</span><b>${v}</b></div>`).join('');
     const un = unlocks.length ? `<div class="dv-unlocks">${unlocks.map((u) => `<div>${icon('star', 14, '#ffd24a')} ${esc(u)}</div>`).join('')}</div>` : '';
     open(`
-      <div class="dv-dead"><div class="dv-dt">You have fallen</div><div class="dv-ds">on floor ${run.floor}, slain by ${esc(s.killedBy || 'the dark')}${isBest ? '<br><b>A new record!</b>' : ''}</div></div>
+      <div class="dv-dead">${icon('skull', 40, '#ff7a6a')}<div class="dv-dt">You have fallen</div><div class="dv-ds">${esc(CLASSES[run.classId].name)}, level ${run.P.level}. Slain by ${esc(s.killedBy || 'the dark')} on floor ${run.floor}.</div>${isBest ? `<div class="dv-rec">${icon('crown', 14)} New record</div>` : ''}</div>
       ${un}
       <div class="dv-stats">${rows}</div>
       <div class="dv-menu">
@@ -606,6 +695,6 @@ export function createUI(root, H) {
       </div>`, 'dv-deadov');
   };
 
-  U.dispose = () => { clearTimeout(bannerT); for (const id of U.timers) clearTimeout(id); U.timers.clear(); ui.remove(); };
+  U.dispose = () => { window.removeEventListener('keydown', onHowKey); clearTimeout(bannerT); for (const id of U.timers) clearTimeout(id); U.timers.clear(); ui.remove(); };
   return U;
 }

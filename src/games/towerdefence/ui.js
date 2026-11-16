@@ -1,7 +1,7 @@
 // HTML overlay for Bastion Maze: HUD, tray, sheets, modals. No game rules here; it calls `h` handlers.
 import {
   TOWERS, TOWER_ORDER, ENEMIES, ABILITIES, CARD_BY_ID, CARD_KIND_NAMES, PRIORITIES, PRIORITY_NAMES, DTYPE_NAMES,
-  ARCHETYPES, ARCHETYPE_ORDER, DIFFICULTY, TILE_NAMES, TILE_INFO, HERO, HERO_WEAPONS, maxLevel, baseLevels,
+  ARCHETYPES, ARCHETYPE_ORDER, DIFFICULTY, TILE_NAMES, TILE_INFO, HERO, HERO_WEAPONS, maxLevel, baseLevels, defaultMods,
 } from './data.js';
 import { ICON, towerIcon, enemyIcon } from './icons.js';
 import {
@@ -28,6 +28,92 @@ const fmt = (n) => {
   return String(n);
 };
 const f1 = (n) => (n >= 100 ? fmt(n) : n >= 10 ? n.toFixed(0) : n.toFixed(1));
+
+// ---------------------------------------------------------------- art made in code (title emblem, guide diagrams)
+// Tile colours match render.js TILE_COL so the diagrams look like the map.
+const TILE_HEX = ['#5d7a46', '#6b6862', '#2c6fa0', '#6f6658', '#7f8f55', '#4f6272', '#6b5030', '#8a6a40', '#3a2d3a', '#3d4f66'];
+const iconInner = (s) => s.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+const placeIcon = (s, x, y, size) => `<g transform="translate(${x} ${y}) scale(${size / 32})">${iconInner(s)}</g>`;
+const CORE_GEM = (cx, cy, r) => `<path d="M${cx} ${cy - r}l${r * 0.75} ${r}-${r * 0.75} ${r}-${r * 0.75}-${r}z" fill="#7fd8ff"/><path d="M${cx} ${cy - r}l${r * 0.3} ${r}-${r * 0.3} ${r}z" fill="#d8f6ff"/>`;
+
+const EMBLEM = `<svg class="bm-emblem" viewBox="0 0 64 64" aria-hidden="true">
+<rect x="1" y="1" width="62" height="62" rx="15" fill="#162030" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+<g fill="#8f8a7e"><rect x="9" y="9" width="18" height="5" rx="1.2"/><rect x="37" y="9" width="18" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="46" rx="1.2"/><rect x="50" y="9" width="5" height="46" rx="1.2"/><rect x="9" y="50" width="46" height="5" rx="1.2"/>
+<rect x="20" y="20" width="24" height="5" rx="1.2"/><rect x="20" y="20" width="5" height="24" rx="1.2"/><rect x="39" y="20" width="5" height="24" rx="1.2"/></g>
+<path d="M32 5 V17 H17 V47 H32 V40" fill="none" stroke="#f0b44c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.1 4.4"/>
+<path d="M27.5 8v-3.5a4.5 4.5 0 0 1 9 0V8" fill="none" stroke="#e25c5c" stroke-width="2.6"/>
+${CORE_GEM(32, 33, 7.5)}
+</svg>`;
+
+const ARROW_R = '<svg class="bm-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEV_L = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEV_R = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+// rows: strings of '.' ground, 'w' wall, 'r' rock, 'G' gate, 'C' core. path: cell list, drawn as the dotted route.
+function gridSvg(rows, path, o = {}) {
+  const cs = 16, H = rows.length, W = rows[0].length;
+  let out = '';
+  rows.forEach((r, y) => [...r].forEach((ch, x) => {
+    const X = x * cs, Y = y * cs;
+    const fill = ch === 'r' ? TILE_HEX[1] : ch === 'G' ? TILE_HEX[8] : ch === 'C' ? TILE_HEX[9] : TILE_HEX[0];
+    out += `<rect x="${X + 0.5}" y="${Y + 0.5}" width="${cs - 1}" height="${cs - 1}" rx="2" fill="${fill}"/>`;
+    if (ch === 'w') out += `<rect x="${X + 1.5}" y="${Y + 1.5}" width="${cs - 3}" height="${cs - 3}" rx="1.5" fill="#8f8a7e"/><path d="M${X + 1.5} ${Y + cs / 2}h${cs - 3}" stroke="#5f5a52" stroke-width="1.2"/>`;
+    if (ch === 'G') out += `<path d="M${X + 4} ${Y + cs - 3}v-6a4 4 0 0 1 8 0v6" fill="none" stroke="#e25c5c" stroke-width="2.4"/>`;
+    if (ch === 'C') out += CORE_GEM(X + cs / 2, Y + cs / 2, 6);
+  }));
+  const pts = path.map(([x, y]) => `${x * cs + cs / 2},${y * cs + cs / 2}`).join(' ');
+  out += `<polyline points="${pts}" fill="none" stroke="#ffe07a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.1 4"/>`;
+  for (const [x, y] of o.enemies || []) out += `<circle cx="${x * cs + cs / 2}" cy="${y * cs + cs / 2}" r="3.6" fill="#d06a4a" stroke="#0e1420" stroke-width="1"/>`;
+  return `<svg class="bm-grid" viewBox="0 0 ${W * cs} ${H * cs}" aria-hidden="true">${out}</svg>`;
+}
+
+const badge = (n, x, y) => `<circle cx="${x}" cy="${y}" r="8" fill="#f0b44c"/><text x="${x}" y="${y + 3.6}" text-anchor="middle" font-size="10.5" font-weight="800" fill="#1a1205">${n}</text>`;
+
+// A mock of the top of the play screen, numbered to match the points on the page.
+const HUD_MOCK = (() => {
+  const box = (x, y, w, h, extra = '') => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="#101620" stroke="rgba(255,255,255,0.18)" ${extra}/>`;
+  let s = `<rect x="0.5" y="0.5" width="299" height="179" rx="14" fill="#25381f" stroke="rgba(255,255,255,0.15)"/>`;
+  s += `<path d="M20 150 H120 V110 H200" fill="none" stroke="#ffe07a" stroke-width="2" stroke-linecap="round" stroke-dasharray="0.1 5" opacity="0.7"/>`;
+  // row 1: menu, lives, gold ... pause/speed
+  s += box(8, 8, 22, 22) + placeIcon(ICON.menu, 11, 11, 16).replace(/currentColor/g, '#e8edf4');
+  s += box(34, 8, 44, 22) + placeIcon(ICON.heart, 38, 12, 14) + '<text x="56" y="23.5" font-size="11" font-weight="700" fill="#e8edf4">20</text>';
+  s += box(82, 8, 50, 22) + placeIcon(ICON.coin, 86, 12, 14) + '<text x="104" y="23.5" font-size="11" font-weight="700" fill="#e8edf4">250</text>';
+  s += box(232, 8, 60, 22) + placeIcon(ICON.pause, 238, 12, 14).replace(/currentColor/g, '#e8edf4') + '<text x="264" y="23.5" font-size="11" font-weight="700" fill="#e8edf4">1x</text>';
+  // row 2: wave, next preview, send
+  s += box(8, 36, 34, 22) + '<text x="25" y="51.5" text-anchor="middle" font-size="11" font-weight="700" fill="#e8edf4">4</text>';
+  s += box(46, 36, 180, 22) + '<text x="53" y="51" font-size="8.5" font-weight="800" fill="#9aa6b6">NEXT</text>';
+  s += placeIcon(enemyIcon('grunt'), 80, 40, 14) + placeIcon(enemyIcon('runner'), 110, 40, 14) + placeIcon(enemyIcon('wasp'), 140, 40, 14);
+  s += `<rect x="230" y="36" width="62" height="22" rx="5" fill="#2e6b52" stroke="#4cc9a0"/>` + placeIcon(ICON.play, 238, 41, 12).replace(/currentColor/g, '#e8edf4') + '<text x="254" y="51.5" font-size="11" font-weight="700" fill="#e8edf4">Send</text>';
+  // abilities column
+  [['meteor', 84], ['freeze', 114], ['rush', 144]].forEach(([id, y]) => {
+    s += `<circle cx="279" cy="${y + 12}" r="12" fill="#101620" stroke="rgba(240,180,76,0.7)"/>` + placeIcon(ICON[id], 271, y + 4, 16);
+  });
+  s += '<path d="M136 62 V58 M261 62 V58 M252 126 H267 M220 19 H232" stroke="#f0b44c" stroke-width="1.5"/>';
+  s += badge(1, 136, 70) + badge(2, 261, 70) + badge(3, 248, 126) + badge(4, 220, 19);
+  return `<svg class="bm-mock" viewBox="0 0 300 180" aria-hidden="true">${s}</svg>`;
+})();
+
+// Where the thumbs go in hero control.
+const HERO_MOCK = (() => {
+  let s = `<rect x="0.5" y="0.5" width="299" height="179" rx="14" fill="#25381f" stroke="rgba(255,255,255,0.15)"/>`;
+  s += `<rect x="1" y="1" width="149" height="178" rx="13" fill="rgba(63,208,192,0.10)"/><rect x="150" y="1" width="149" height="178" rx="13" fill="rgba(255,122,47,0.10)"/>`;
+  s += `<path d="M150 12 V168" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+  // left stick
+  s += `<circle cx="80" cy="104" r="28" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.45)" stroke-width="2"/><circle cx="93" cy="95" r="11" fill="rgba(255,255,255,0.55)"/>`;
+  s += `<text x="80" y="156" text-anchor="middle" font-size="12.5" font-weight="800" fill="#bff5ec">Left thumb: move</text>`;
+  // right stick
+  s += `<circle cx="200" cy="104" r="28" fill="rgba(255,255,255,0.06)" stroke="rgba(255,122,47,0.7)" stroke-width="2"/><circle cx="187" cy="93" r="11" fill="rgba(255,140,70,0.7)"/>`;
+  s += `<text x="218" y="156" text-anchor="middle" font-size="12.5" font-weight="800" fill="#ffd2b0">Right thumb: aim</text>`;
+  // hero between the sticks
+  s += placeIcon(ICON.hero, 128, 88, 26);
+  // build button top left, hero buttons right column
+  s += `<rect x="8" y="8" width="38" height="38" rx="10" fill="rgba(63,208,192,0.2)" stroke="#3fd0c0"/>` + placeIcon(ICON.build, 15, 11, 24) + '<text x="52" y="31" font-size="10" font-weight="700" fill="#cfd8e4">Build</text>';
+  [['dash', 14, 'Dash'], ['nova', 48, 'Nova'], ['swap', 82, 'Swap']].forEach(([id, y, l]) => {
+    s += `<circle cx="279" cy="${y + 12}" r="12" fill="#101620" stroke="rgba(255,255,255,0.3)"/>` + placeIcon(ICON[id], 271, y + 4, 16).replace(/currentColor/g, '#e8edf4');
+    s += `<text x="261" y="${y + 15.5}" text-anchor="end" font-size="9" font-weight="700" fill="#cfd8e4">${l}</text>`;
+  });
+  return `<svg class="bm-mock" viewBox="0 0 300 180" aria-hidden="true">${s}</svg>`;
+})();
 
 export function createHud(ui, h) {
   const rootEl = el('div', 'bm');
@@ -62,25 +148,35 @@ export function createHud(ui, h) {
 
   // ---------------------------------------------------------------- side columns
   const side = el('div', 'bm-side');
-  const abBtns = {};
+  // each round button sits in a wrapper with a name label, shown before the first wave (and the first hero touch)
+  const wrapBtn = (b, name) => {
+    b.setAttribute('aria-label', name);
+    const w = el('div', 'bm-aw');
+    w.append(el('span', 'bm-alab', name), b);
+    side.appendChild(w);
+    return w;
+  };
+  const abBtns = {}, abWrap = {};
   for (const id of ['orbital', 'meteor', 'freeze', 'rush']) {
     const b = btn('bm-abtn', `${ICON[id]}<div class="cd"></div><div class="cdt"></div>`, () => h.ability(id));
-    b.setAttribute('aria-label', ABILITIES[id].name);
     abBtns[id] = b;
-    side.appendChild(b);
+    abWrap[id] = wrapBtn(b, ABILITIES[id].name);
   }
   const heroBtns = {
     dash: btn('bm-abtn', `${ICON.dash}<div class="cd"></div><div class="cdt"></div>`, () => h.dash()),
     ult: btn('bm-abtn', `${ICON.nova}<div class="cd"></div><div class="cdt"></div>`, () => h.ult()),
     swap: btn('bm-abtn', `${ICON.swap}<div class="cdt"></div>`, () => h.swap()),
   };
-  for (const b of Object.values(heroBtns)) side.appendChild(b);
+  const heroWrap = { dash: wrapBtn(heroBtns.dash, 'Dash'), ult: wrapBtn(heroBtns.ult, HERO.ult.name), swap: wrapBtn(heroBtns.swap, 'Swap weapon') };
   rootEl.appendChild(side);
 
   const left = el('div', 'bm-left');
   const modeB = btn('bm-mode', `${ICON.hero}<span>Hero</span>`, () => h.toggleHero());
+  modeB.setAttribute('aria-label', 'Switch between building and hero control');
   const hstat = el('div', 'bm-hstat', `<div class="lv">Lv 1</div><div class="bm-bar"><i></i></div><div class="bm-bar xp"><i></i></div><div class="pts"></div>`);
   hstat.addEventListener('click', () => h.openHeroSheet());
+  hstat.setAttribute('role', 'button');
+  hstat.setAttribute('aria-label', 'Hero upgrades');
   left.append(modeB, hstat);
   rootEl.appendChild(left);
 
@@ -90,6 +186,7 @@ export function createHud(ui, h) {
   const ctxTxt = el('div', 'txt');
   const confirm = btn('bm-confirm', `${ICON.check}<span>Build</span>`, () => h.confirm());
   const cancel = btn('bm-x', ICON.close, () => h.cancel());
+  cancel.setAttribute('aria-label', 'Cancel');
   ctx.append(ctxTxt, confirm, cancel);
   const tray = el('div', 'bm-tray');
   const cards = {};
@@ -101,10 +198,23 @@ export function createHud(ui, h) {
   bottom.append(ctx, tray);
   rootEl.appendChild(bottom);
 
+  // ---------------------------------------------------------------- first-run coach (two pointers, shown once)
+  const coachEl = (where) => {
+    const n = el('div', 'bm-coach ' + where + ' bm-hidden', '<i class="tip"></i><span class="t"></span>');
+    n.setAttribute('role', 'status');
+    const x = btn('bm-coach-x', 'Got it', () => h.coachDone());
+    n.appendChild(x);
+    return n;
+  };
+  const coachTray = coachEl('at-tray');
+  const coachCall = coachEl('at-call');
+  bottom.appendChild(coachTray);
+  top.appendChild(coachCall);
+
   // ---------------------------------------------------------------- hero mode controls
   const stickL = el('div', 'bm-stick', '<i></i>');
   const stickR = el('div', 'bm-stick aim', '<i></i>');
-  const heroHint = el('div', 'bm-hint', 'Left thumb: move · Right thumb: aim and fire · Otherwise auto-aim');
+  const heroHint = el('div', 'bm-hint', 'Left thumb moves. Right thumb aims and fires. Let go to auto-aim.');
   rootEl.append(stickL, stickR, heroHint);
 
   const toasts = el('div', 'bm-toasts');
@@ -112,7 +222,7 @@ export function createHud(ui, h) {
   const targetMsg = el('div', 'bm-target bm-hidden', 'Tap the map to aim');
   rootEl.append(flash, toasts, targetMsg);
 
-  let sheet = null, modal = null;
+  let sheet = null, modal = null, titleOn = false;
   const floats = [];
   for (let i = 0; i < 16; i++) { const f = el('div', 'bm-float'); f.style.opacity = '0'; rootEl.appendChild(f); floats.push({ el: f, t: 0, x: 0, y: 0 }); }
   let floatHead = 0;
@@ -124,6 +234,7 @@ export function createHud(ui, h) {
   const show = (key, node, on) => setCls(key, node, 'bm-hidden', !on);
 
   function update(s, c, dt) {
+    if (titleOn) { titleOn = false; rootEl.classList.remove('bm-title-on'); }
     setText('lives', lives.lastChild, fmt(s.lives));
     setText('gold', gold.lastChild, fmt(s.gold));
     setText('wave', wave.lastChild, String(s.wave));
@@ -163,7 +274,7 @@ export function createHud(ui, h) {
     for (const id in abBtns) {
       const b = abBtns[id];
       const on = list.includes(id);
-      show('ab' + id, b, on);
+      show('ab' + id, abWrap[id], on);
       if (!on) continue;
       const cd = Math.max(0, s.ab[id]);
       const max = ABILITIES[id].cd * s.mods.cooldown;
@@ -193,7 +304,8 @@ export function createHud(ui, h) {
       setText('hlv', hstat.children[0], hero.downT > 0 ? `Down ${Math.ceil(hero.downT)}s` : `Lv ${hero.level}`);
       setText('hpts', hstat.children[3], hero.points > 0 ? `+${hero.points} pts` : HERO_WEAPONS[hero.weapon].name);
     }
-    for (const id in heroBtns) show('hb' + id, heroBtns[id], heroMode);
+    for (const id in heroBtns) show('hb' + id, heroWrap[id], heroMode);
+    setCls('labels', side, 'labels', heroMode ? !c.hintSeen : s.wave === 0);
     if (heroMode) {
       const d = Math.max(0, hero.dashCd), u = Math.max(0, hero.ultCd);
       const st = heroStats(s, s.hst);
@@ -218,6 +330,7 @@ export function createHud(ui, h) {
       }
       updateCtx(s, c);
     }
+    updateCoach(s, c, heroMode);
     if (sheet && sheet.refresh) sheet.refresh(s, c);
     // floats
     for (const f of floats) {
@@ -246,7 +359,7 @@ export function createHud(ui, h) {
       html = `<b>${d.name}</b> (${fmt(buildCost(s, c.armed))}): ${d.role} Tap a tile.`;
     } else {
       cancelOn = false;
-      html = s.wave === 0 ? 'Tap a tile, pick a tower, confirm. Walls shape the enemy path.' : 'Tap a tile to build, or a tower to upgrade it.';
+      html = s.wave === 0 ? 'Tap a tile, pick a tower, then press <b>Build</b>. Walls bend the enemy path.' : 'Tap a tile to build, or a tower to upgrade it.';
     }
     if (cache.ctx !== html) { cache.ctx = html; ctxTxt.innerHTML = html; }
     show('confirm', confirm, confirmOn);
@@ -254,6 +367,22 @@ export function createHud(ui, h) {
     setCls('cno', confirm, 'no', !confirmOk);
     confirm.disabled = !confirmOk;
     setText('cl', confirm.lastChild, confirmLabel);
+  }
+
+  function updateCoach(s, c, heroMode) {
+    let tray = '', call = '';
+    if (!c.settings.seenCoach && s.wave === 0 && !heroMode && !modal && !sheet && !c.targeting) {
+      if (s.stats.built > 0) call = 'Build more if you like, then press <b>Start</b> to send the first wave.';
+      else if (c.armed && c.selTile >= 0) tray = 'Press <b>Build</b> to place it.';
+      else if (c.armed) tray = `Now tap an open tile on the map to place the ${TOWERS[c.armed].name}.`;
+      else if (c.selTile >= 0) tray = 'Now pick a tower from the tray below.';
+      else tray = 'Pick a tower from the tray below, then tap a tile on the map.';
+    }
+    if (cache.coachT !== tray) { cache.coachT = tray; if (tray) coachTray.children[1].innerHTML = tray; }
+    if (cache.coachC !== call) { cache.coachC = call; if (call) coachCall.children[1].innerHTML = call; }
+    show('coachT', coachTray, !!tray);
+    show('coachC', coachCall, !!call);
+    setCls('coachB', coachTray, 'to-build', !!(c.armed && c.selTile >= 0));
   }
 
   const timeouts = new Set();
@@ -465,19 +594,26 @@ export function createHud(ui, h) {
   function showPause(c) {
     openModal((box) => {
       box.appendChild(el('h2', null, 'Paused'));
-      box.appendChild(el('p', null, `${c.runLabel}`));
+      box.appendChild(el('p', 'bm-desc', `Wave ${c.s.wave} · ${c.runLabel}`));
       box.appendChild(btn('bm-btn pri', 'Resume', () => h.resume()));
+      const grp = el('div', 'bm-setgrp');
+      box.appendChild(grp);
       const tog = (label, on, fn) => {
         const r = el('div', 'bm-tog', `<span>${label}</span>`);
-        r.appendChild(btn(on ? 'on' : '', on ? 'On' : 'Off', fn));
-        box.appendChild(r);
+        const b = btn(on ? 'on' : '', on ? 'On' : 'Off', fn);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.setAttribute('aria-label', label);
+        r.appendChild(b);
+        grp.appendChild(r);
       };
       tog('Start waves automatically', c.s.autoWaves, () => { h.toggleSetting('autoWaves'); showPause(c); });
       tog('Screen shake', c.settings.shake, () => { h.toggleSetting('shake'); showPause(c); });
       tog('Show enemy path', c.settings.paths, () => { h.toggleSetting('paths'); showPause(c); });
-      box.appendChild(btn('bm-btn', 'How to play', () => showHow(() => showPause(c))));
-      box.appendChild(btn('bm-btn', 'Restart run', () => confirmBox('Restart this run? Progress is lost.', () => h.restart(), () => showPause(c))));
-      box.appendChild(btn('bm-btn', 'Exit to menu (saved)', () => h.exitToMenu()));
+      const row = el('div', 'bm-row2');
+      row.append(btn('bm-btn', 'How to play', () => showHow(() => showPause(c))),
+        btn('bm-btn', 'Restart run', () => confirmBox('Restart this run?', 'You lose the progress on this run and start again on the same settings.', 'Restart', () => h.restart(), () => showPause(c))));
+      box.appendChild(row);
+      box.appendChild(btn('bm-btn', 'Save and exit to menu', () => h.exitToMenu()));
       if (c.s.perks.length) {
         const k = cardStrength(c.s);
         box.appendChild(el('h3', null, 'Cards this run'));
@@ -490,79 +626,204 @@ export function createHud(ui, h) {
     });
   }
 
-  function confirmBox(text, yes, no) {
+  function confirmBox(title, text, yesLabel, yes, no) {
     openModal((box) => {
+      box.appendChild(el('h2', null, title));
       box.appendChild(el('p', null, text));
-      box.appendChild(btn('bm-btn pri', 'Yes', yes));
+      box.appendChild(btn('bm-btn pri', yesLabel, yes));
       box.appendChild(btn('bm-btn', 'Cancel', no));
     });
   }
 
-  const HOW = [
-    ['Defend the core', `<ul><li>Enemies march from the red gates to your crystal core. Each one that gets through costs lives (bosses cost many).</li>
-      <li>Kills and cleared waves pay gold. Spend it on towers and upgrades.</li><li>Waves never end. See how far you get.</li></ul>`],
-    ['Build the maze', `<ul><li><b>Tap a tile</b>, pick a tower from the tray, then press <b>Build</b>. Nothing is built on a bare tap.</li>
-      <li>Every building blocks its tile. Ground enemies always take the shortest open route, shown by the glowing dotted line, so walls make them walk longer under fire.</li>
-      <li>You can never close the last route: a placement that would is refused, and the preview turns red.</li>
-      <li>Flyers ignore the maze and fly straight at the core. Archers, Frost, Tesla, Venom and Snipers can hit them.</li>
-      <li>High ground gives +20% range, crystal tiles +25% damage, mud slows enemies.</li></ul>`],
-    ['Towers', `<ul><li><b>Tap a tower</b> to see its stats, change its targeting (First, Last, Strong, Weak, Close), upgrade it or sell it. Towers built since the last wave refund in full.</li>
-      <li>After three levels each tower chooses one of two specialisations that change how it works.</li>
-      <li>Beacons boost neighbours, Gold Mines pay every wave, Walls are cheap blocks that can grow spikes or become lookouts.</li></ul>`],
-    ['Enemies and damage', `<ul><li>Armour subtracts from every hit: use big hits, Piercing (Sniper) or Poison (Venom).</li>
-      <li>Shields soak damage and regrow; Shock (Tesla) tears them twice as fast.</li>
-      <li>Shades are invisible except for brief shimmers: Hunters, Lookouts, Beacon level 3 and splash damage reveal them.</li>
-      <li>Combos: frozen or chilled enemies shatter under physical hits; tarred enemies take double fire damage.</li>
-      <li>Sappers and some bosses jam towers for a few seconds. Menders heal. Trolls regenerate unless burning or poisoned.</li></ul>`],
-    ['Waves, cards, abilities', `<ul><li>The top bar shows the next wave. Press <b>Send</b> to call it early for bonus gold.</li>
-      <li>Every few waves and after each boss you pick one of three cards: perks, economy, relics, or curses that trade risk for reward.</li>
-      <li>Abilities on the right: Meteor (tap the button, then the map), Deep Freeze, Gold Rush. They recharge over time.</li>
-      <li>Pause, 1x, 2x and 4x speed are top right. You can build while paused.</li></ul>`],
-    ['The hero', `<ul><li>From wave ${HERO.unlockWave} you can <b>Deploy</b> a hero (left button). In Overpowered mode it is ready at once.</li>
-      <li>The left button switches between <b>Build</b> and <b>Hero</b> control. In Hero control: <b>left thumb</b> anywhere on the left half moves, <b>right thumb</b> on the right half aims and fires. Let go of the right thumb and the hero auto-aims at the nearest enemy.</li>
-      <li>Dash dodges with brief invulnerability; Nova stuns and blasts everything close. Swap cycles weapons.</li>
-      <li>Kills level the hero up: tap the hero card on the left to spend points on damage, rate, speed and health. Armoury cards add weapons; hero cards link the hero to your towers.</li>
-      <li>The hero is blocked by buildings but never blocks enemies. If downed it returns to the core shortly. In Build control it holds position and auto-fires.</li></ul>`],
-  ];
-  function showHow(onClose, page = 0) {
+  // ---------------------------------------------------------------- how to play (paged, illustrated)
+  function howPages() {
+    const sellPct = Math.round(defaultMods().sellRate * 100);
+    const arrowT = TOWERS.arrow;
+    const towerRows = TOWER_ORDER.map((k) => {
+      const d = TOWERS[k];
+      return `<div class="bm-trow">${towerIcon(k)}<div><b>${d.name}</b><span>${d.role}</span></div>${d.air ? '<em class="bm-air">Air</em>' : ''}</div>`;
+    }).join('');
+    const enemyRow = (type, text) => `<div class="bm-trow">${enemyIcon(type)}<div><b>${ENEMIES[type].name}</b><span>${text}</span></div></div>`;
+    const tileRow = (t, text) => `<div class="bm-trow"><i class="bm-sw" style="background:${TILE_HEX[t]}"></i><div><b>${TILE_NAMES[t]}</b><span>${text}</span></div></div>`;
+    const card = (kind, id) => {
+      const c = CARD_BY_ID[id];
+      return `<div class="bm-mcard ${kind}"><small>${CARD_KIND_NAMES[kind]}</small><b>${c.name}</b><span>${c.text(1)}</span></div>`;
+    };
+    return [
+      {
+        title: 'Defend the core',
+        pic: gridSvg(['..r......', 'G.......C', '.....r...'], [[0, 1], [8, 1]], { enemies: [[1.6, 1], [3.1, 1], [4.4, 1]] }),
+        points: [
+          'Enemies walk from the red gate to your crystal core.',
+          'Each one that gets through costs lives. Bosses cost many.',
+          'Kills and cleared waves pay gold. Spend it on towers.',
+          'The waves never end. See how far you get.',
+        ],
+      },
+      {
+        title: 'Build the maze',
+        pic: `<div class="bm-pic2">${gridSvg(['.......', '.......', 'G.....C', '.......', '.......'], [[0, 2], [6, 2]])}${ARROW_R}${gridSvg(['....w..', '..w.w..', 'G.w.w.C', '..w.w..', '..w....'], [[0, 2], [1, 2], [1, 0], [3, 0], [3, 4], [5, 4], [5, 2], [6, 2]])}</div>`,
+        points: [
+          '<b>Tap a tile</b>, pick a tower in the tray, then press <b>Build</b>.',
+          'Every building blocks its tile. Enemies on foot take the shortest open route, shown as a dotted line.',
+          'Walls are cheap. Use them to make the route long.',
+          'You can never close the last route. The preview turns red.',
+        ],
+      },
+      {
+        title: 'Read the ground',
+        lead: 'Tap any tile on the map to see what it is.',
+        pic: `<div class="bm-list">${tileRow(4, 'Towers here get +20% range.')}${tileRow(5, 'Towers here deal +25% damage.')}${tileRow(6, 'Enemies wade at half speed. No building.')}${tileRow(2, 'Only flyers cross it.')}${tileRow(1, 'Blocks walking and building, like ruins.')}</div>`,
+        points: [],
+      },
+      {
+        title: 'Towers',
+        lead: 'Flyers ignore the maze. Only towers marked <em class="bm-air">Air</em> can hit them.',
+        pic: `<div class="bm-list bm-list-s">${towerRows}</div>`,
+        points: [],
+      },
+      {
+        title: 'Upgrade and sell',
+        pic: `<div class="bm-branchpic"><div class="bm-bp-src">${towerIcon('arrow')}<b>${arrowT.name}</b><small>Level ${baseLevels('arrow')}</small></div>${ARROW_R}<div class="bm-bp-col"><div class="bm-mcard perk"><b>${arrowT.branches.a.name}</b><small>${arrowT.branches.a.desc}</small></div><div class="bm-mcard perk"><b>${arrowT.branches.b.name}</b><small>${arrowT.branches.b.desc}</small></div></div></div>`,
+        points: [
+          '<b>Tap a tower</b> to see its stats, upgrade it, sell it or choose what it targets.',
+          'After its last base level, pick one of two specialisations. The choice is permanent.',
+          `Selling pays back ${sellPct}%. Towers built since the last wave refund in full.`,
+        ],
+      },
+      {
+        title: 'Know the enemy',
+        pic: `<div class="bm-list bm-list-s">${enemyRow('wasp', 'Flies over the maze. Needs Air towers.')}${enemyRow('knight', 'Armour shrinks every hit. Use Sniper, Venom or big hits.')}${enemyRow('warden', 'Shield regrows. Shock from Tesla tears it twice as fast.')}${enemyRow('shade', 'Hidden. Hunter, Lookout, Beacon level 3 or splash reveal it.')}${enemyRow('mender', 'Heals nearby enemies. Kill it first.')}${enemyRow('sapper', 'Jams towers it walks past.')}</div>`,
+        points: [
+          'A boss comes every 10th wave.',
+          'Chilled or frozen enemies take extra physical damage. Tar doubles fire damage.',
+        ],
+      },
+      {
+        title: 'Waves and abilities',
+        pic: HUD_MOCK,
+        points: [
+          { n: 1, t: 'The next wave. Tap it to see who is coming.' },
+          { n: 2, t: 'Press <b>Send</b> to call the next wave early for bonus gold.' },
+          { n: 3, t: 'Abilities recharge over time. For Meteor, tap it, then the map.' },
+          { n: 4, t: 'Pause and speed: 1x, 2x, 4x. You can build while paused.' },
+        ],
+      },
+      {
+        title: 'Cards',
+        pic: `<div class="bm-cardpic">${card('perk', 'drill')}${card('econ', 'chest')}${card('relic', 'hourglass')}</div>`,
+        points: [
+          'Every 5 waves you pick one of three cards. In Overpowered, every 3.',
+          'Perks can stack, relics are one of a kind, economy cards boost your gold.',
+          'Curses trade a risk for a reward.',
+        ],
+      },
+      {
+        title: 'The hero',
+        pic: HERO_MOCK,
+        points: [
+          `From wave ${HERO.unlockWave}, tap <b>Deploy</b> on the left. In Overpowered the hero starts in play.`,
+          'Left thumb moves. Right thumb aims and fires. Let go and the hero aims by itself.',
+          'Dash dodges, Nova stuns everything nearby, Swap changes weapon.',
+          'Tap the hero card to spend level-up points. <b>Build</b> takes you back to building.',
+        ],
+      },
+    ];
+  }
+
+  function showHow(onClose, opts = {}) {
+    const pages = howPages();
+    let page = 0;
+    const done = () => { closeModal(); onClose && onClose(); };
     openModal((box) => {
-      box.appendChild(el('h2', null, HOW[page][0]));
-      box.appendChild(el('div', null, HOW[page][1]));
-      box.appendChild(el('p', 'bm-note', `${page + 1} / ${HOW.length}`));
-      const nav = el('div', 'bm-pages');
-      if (page > 0) nav.appendChild(btn('bm-btn', 'Back', () => showHow(onClose, page - 1)));
-      if (page < HOW.length - 1) nav.appendChild(btn('bm-btn pri', 'Next', () => showHow(onClose, page + 1)));
-      else nav.appendChild(btn('bm-btn pri', 'Got it', () => { closeModal(); onClose && onClose(); }));
-      box.appendChild(nav);
-      if (page < HOW.length - 1) box.appendChild(btn('bm-btn', 'Skip', () => { closeModal(); onClose && onClose(); }));
+      box.classList.add('bm-how');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-label', 'How to play');
+      const head = el('div', 'bm-how-head');
+      const dots = el('div', 'bm-dots');
+      dots.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < pages.length; i++) dots.appendChild(el('i'));
+      const count = el('span', 'bm-sr');
+      count.setAttribute('aria-live', 'polite');
+      const skip = btn('bm-skip', 'Skip', done);
+      head.append(dots, count, skip);
+      const body = el('div', 'bm-how-body');
+      const nav = el('div', 'bm-how-nav');
+      const back = btn('bm-btn', 'Back', () => go(page - 1));
+      const next = btn('bm-btn pri', 'Next', () => (page < pages.length - 1 ? go(page + 1) : done()));
+      nav.append(back, next);
+      box.append(head, body, nav);
+
+      function go(p, dir = p > page ? 1 : -1) {
+        if (p < 0 || p >= pages.length) return;
+        page = p;
+        const pg = pages[p];
+        const inner = el('div', 'bm-how-page ' + (dir > 0 ? 'in-r' : 'in-l'));
+        inner.appendChild(el('h2', null, pg.title));
+        if (pg.lead) inner.appendChild(el('p', 'bm-lead', pg.lead));
+        inner.appendChild(el('div', 'bm-pic', pg.pic));
+        const ul = el('ul', 'bm-points');
+        for (const pt of pg.points) {
+          if (typeof pt === 'string') ul.appendChild(el('li', null, pt));
+          else ul.appendChild(el('li', 'num', `<span class="bm-num">${pt.n}</span><span>${pt.t}</span>`));
+        }
+        if (pg.points.length) inner.appendChild(ul);
+        body.replaceChildren(inner);
+        body.scrollTop = 0;
+        [...dots.children].forEach((d, i) => d.classList.toggle('on', i === p));
+        count.textContent = `Page ${p + 1} of ${pages.length}`;
+        back.classList.toggle('bm-invis', p === 0);
+        back.disabled = p === 0;
+        const last = p === pages.length - 1;
+        next.textContent = last ? (opts.doneLabel || 'Got it') : 'Next';
+        skip.classList.toggle('bm-invis', last);
+      }
+      // swipe between pages
+      let sx = 0, sy = 0, sid = null;
+      box.addEventListener('pointerdown', (e) => { sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
+      box.addEventListener('pointerup', (e) => {
+        if (e.pointerId !== sid) return;
+        sid = null;
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(page + (dx < 0 ? 1 : -1));
+      });
+      box.addEventListener('pointercancel', () => { sid = null; });
+      box.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.stopPropagation(); go(page + 1); }
+        else if (e.key === 'ArrowLeft') { e.stopPropagation(); go(page - 1); }
+      });
+      go(0, 1);
+      box.tabIndex = -1;
+      requestAnimationFrame(() => box.focus({ preventScroll: true }));
     });
   }
 
   function showWaveInfo(s, onClose) {
     openModal((box) => {
-      box.appendChild(el('h2', null, `Wave ${s.wave + 1}`));
-      const sum = nextWaveSummary(s);
-      const ul = el('ul');
+      const boss = s.next && s.next.boss;
+      box.appendChild(el('div', 'bm-mhead', `<h2>Wave ${s.wave + 1}</h2>${boss ? '<span class="bm-tag boss">Boss wave</span>' : ''}`));
+      const fresh = s.next ? s.next.tags.filter((t) => t.startsWith('new:')).map((t) => t.slice(4)) : [];
+      const sum = nextWaveSummary(s).sort((a, b) => (ENEMIES[b.type].boss ? 1 : 0) - (ENEMIES[a.type].boss ? 1 : 0));
+      const list = el('div', 'bm-list');
       for (const it of sum) {
         const e = ENEMIES[it.type];
-        ul.appendChild(el('li', null, `<b>${it.count} x ${e.name}</b>${e.flying ? ' (flying)' : ''}: ${e.desc}`));
+        const tags = (e.flying ? '<em class="bm-air">Air</em>' : '') + (fresh.includes(it.type) ? '<em class="bm-new">New</em>' : '');
+        list.appendChild(el('div', 'bm-trow' + (e.boss ? ' boss' : ''), `${enemyIcon(it.type)}<div><b><span class="bm-n">${it.count}</span> x ${e.name}</b><span>${e.desc}</span></div>${tags}`));
       }
-      box.appendChild(ul);
-      if (s.next && s.next.tags.length) {
-        const tags = s.next.tags.map((t) => (t.startsWith('new:') ? `new enemy: ${ENEMIES[t.slice(4)].name}` : t)).join(', ');
-        box.appendChild(el('p', 'bm-note', tags));
-      }
+      box.appendChild(list);
       box.appendChild(btn('bm-btn pri', 'Close', () => { closeModal(); onClose && onClose(); }));
     });
   }
 
   function showGameOver(s, info) {
     openModal((box) => {
+      box.classList.add('bm-over');
       box.appendChild(el('h2', null, 'The core has fallen'));
-      box.appendChild(el('p', null, `${info.runLabel}. You reached <b>wave ${s.wave}</b>${info.record ? ' — a new record!' : ''}.`));
+      if (info.record) box.appendChild(el('div', 'bm-banner', `${ICON.star}<span>New record: wave ${s.wave}</span>`));
+      box.appendChild(el('p', null, `${info.runLabel}. You reached <b>wave ${s.wave}</b>.`));
       const sum = el('div', 'bm-sum');
       const add = (k, v) => sum.appendChild(el('div', 'bm-stat', `<small>${k}</small><b>${v}</b>`));
-      add('Waves cleared', s.cleared); add('Best', info.best);
+      add('Waves cleared', s.cleared); add('Best', `wave ${info.best}`);
       add('Kills', fmt(s.stats.kills)); add('Bosses', s.stats.bossKills);
       add('Gold earned', fmt(s.stats.goldEarned)); add('Towers built', s.stats.built);
       add('Hero level', s.hero.deployed ? s.hero.level : '-'); add('Cards', s.perks.length);
@@ -572,53 +833,122 @@ export function createHud(ui, h) {
     });
   }
 
+  // ---------------------------------------------------------------- title
   function showTitle(o) {
-    // o: { save: {label} | null, records, onContinue, onStart(opts), onHow, onExit, last }
+    // o: { save: label | null, records, onContinue, onStart(opts), onExit, last, today }
     let mode = o.last.mode || 'std', diff = o.last.difficulty || 'normal', arch = o.last.archetype || 'random';
-    const render = () => openModal((box) => {
-      box.appendChild(el('div', 'bm-title', 'Bastion Maze'));
-      box.appendChild(el('div', 'bm-sub', 'Build the maze the enemy walks.'));
-      if (o.save) box.appendChild(btn('bm-btn pri', `Continue · ${o.save}`, () => o.onContinue()));
-      box.appendChild(el('h3', null, 'New run'));
-      const modes = el('div', 'bm-chips');
-      for (const [k, l] of [['std', 'Standard'], ['op', 'Overpowered'], ['daily', 'Daily'], ['seed', 'Seed']]) {
-        modes.appendChild(btn(mode === k ? 'on' : '', l, () => { mode = k; render(); }));
+    let seedText = o.last.seedText || '';
+    let expanded = !o.save; // with a save, Continue leads and the new-run options stay folded until asked for
+    if (!DIFFICULTY[diff]) diff = 'normal';
+    if (arch !== 'random' && !ARCHETYPES[arch]) arch = 'random';
+    titleOn = true;
+    rootEl.classList.add('bm-title-on');
+    const MODES = {
+      std: ['Standard', 'Choose a difficulty and a map. Records are kept per difficulty.'],
+      op: ['Overpowered', 'Mountains of gold, triple damage, a hero in play and an orbital strike. Bigger waves, separate records.'],
+      daily: ['Daily', `Today's map and waves (${o.today}), the same all day. Normal difficulty.`],
+      seed: ['Seed', 'The same seed and map always give the same run. Normal difficulty.'],
+    };
+    const MAPS = ['random', ...ARCHETYPE_ORDER];
+    const RECS = [['std-easy', 'Easy'], ['std-normal', 'Normal'], ['std-hard', 'Hard'], ['op', 'Overpowered'], ['daily', 'Daily (today)'], ['seed', 'Seeded']];
+
+    const render = () => {
+      const prevBox = modal && modal.firstChild;
+      const scroll = prevBox && prevBox.classList.contains('bm-tbox') ? prevBox.scrollTop : 0;
+      const fk = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.fk : null;
+      const box = openModal((b) => build(b));
+      modal.classList.add('bm-tmodal');
+      box.scrollTop = scroll;
+      if (fk) { const f = box.querySelector(`[data-fk="${fk}"]`); if (f) f.focus({ preventScroll: true }); }
+    };
+    const opt = (fk, label, on, fn, cls = '') => {
+      const b = btn(cls + (on ? ' on' : ''), label, fn);
+      b.dataset.fk = fk;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      return b;
+    };
+    const group = (label, ...kids) => {
+      const g = el('div', 'bm-grp');
+      g.appendChild(el('div', 'bm-glab', label));
+      for (const k of kids) if (k) g.appendChild(k);
+      return g;
+    };
+
+    function build(box) {
+      box.classList.add('bm-tbox');
+      box.appendChild(el('div', 'bm-thead', `${EMBLEM}<div><div class="bm-title">Bastion Maze</div><div class="bm-sub">Build the maze the enemy walks.</div></div>`));
+      if (o.save) {
+        const cont = btn('bm-btn pri bm-cont', `${ICON.play}<span><b>Continue</b><small>${o.save}</small></span>`, () => o.onContinue());
+        cont.dataset.fk = 'cont';
+        box.appendChild(cont);
       }
-      box.appendChild(modes);
+      if (!expanded) {
+        const more = btn('bm-btn alt', 'New run', () => { expanded = true; render(); });
+        more.dataset.fk = 'm-' + mode;
+        box.appendChild(more);
+      }
+      const sec = el('div', 'bm-newrun');
+      if (expanded) box.appendChild(sec);
+      sec.appendChild(el('h3', null, 'New run'));
+      // mode
+      const modes = el('div', 'bm-seg2');
+      for (const k of Object.keys(MODES)) modes.appendChild(opt('m-' + k, MODES[k][0], mode === k, () => { mode = k; render(); }, k === 'op' ? 'op' : ''));
+      sec.appendChild(group('Mode', modes, el('p', 'bm-desc', MODES[mode][1])));
+      // difficulty
       if (mode === 'std') {
-        const ds = el('div', 'bm-chips');
-        for (const k of Object.keys(DIFFICULTY)) ds.appendChild(btn(diff === k ? 'on' : '', DIFFICULTY[k].name, () => { diff = k; render(); }));
-        box.appendChild(ds);
+        const ds = el('div', 'bm-segc');
+        for (const k of Object.keys(DIFFICULTY)) ds.appendChild(opt('d-' + k, DIFFICULTY[k].name, diff === k, () => { diff = k; render(); }));
+        const d = DIFFICULTY[diff];
+        sec.appendChild(group('Difficulty', ds, el('p', 'bm-desc', `${d.lives} lives and ${d.gold} gold to start. Enemy health ${Math.round(d.hp * 100)}%.`)));
       }
-      let seedInput = null;
-      if (mode === 'op') box.appendChild(el('p', 'bm-note', 'Mountains of gold, cheap upgrades, triple damage, an orbital strike on a short fuse and a hero that is ready at once. The waves are bigger too, and they never stop growing. Separate records.'));
-      if (mode === 'daily') box.appendChild(el('p', 'bm-note', `Today's map and waves are the same for everyone on this device's date (${o.today}). Normal difficulty.`));
+      // seed
       if (mode === 'seed') {
-        seedInput = el('input', 'bm-input');
-        seedInput.placeholder = 'Type any word or number';
-        seedInput.value = o.last.seedText || '';
-        seedInput.addEventListener('keydown', (e) => e.stopPropagation());
-        box.appendChild(seedInput);
+        const inp = el('input', 'bm-input');
+        inp.placeholder = 'Type any word or number';
+        inp.value = seedText;
+        inp.maxLength = 40;
+        inp.setAttribute('aria-label', 'Seed');
+        inp.addEventListener('input', () => { seedText = inp.value; });
+        inp.addEventListener('keydown', (e) => e.stopPropagation());
+        sec.appendChild(group('Seed', inp, el('p', 'bm-desc', 'Leave it empty for a random number.')));
       }
+      // map
       if (mode !== 'daily') {
-        const as = el('div', 'bm-chips');
-        as.appendChild(btn(arch === 'random' ? 'on' : '', 'Random map', () => { arch = 'random'; render(); }));
-        for (const k of ARCHETYPE_ORDER) as.appendChild(btn(arch === k ? 'on' : '', ARCHETYPES[k].name, () => { arch = k; render(); }));
-        box.appendChild(as);
-        if (arch !== 'random') box.appendChild(el('p', 'bm-note', ARCHETYPES[arch].desc));
+        const i = MAPS.indexOf(arch);
+        const step = (d) => { arch = MAPS[(i + d + MAPS.length) % MAPS.length]; render(); };
+        const row = el('div', 'bm-stepper');
+        const prev = btn('bm-stepb', CHEV_L, () => step(-1));
+        prev.dataset.fk = 'map-prev'; prev.setAttribute('aria-label', 'Previous map');
+        const nxt = btn('bm-stepb', CHEV_R, () => step(1));
+        nxt.dataset.fk = 'map-next'; nxt.setAttribute('aria-label', 'Next map');
+        const name = el('div', 'bm-stepv', `<b>${arch === 'random' ? 'Random map' : ARCHETYPES[arch].name}</b><small>${i + 1} of ${MAPS.length}</small>`);
+        name.setAttribute('aria-live', 'polite');
+        row.append(prev, name, nxt);
+        sec.appendChild(group('Map', row, el('p', 'bm-desc', arch === 'random' ? 'A different kind of map each run.' : ARCHETYPES[arch].desc)));
       }
-      box.appendChild(btn('bm-btn ' + (mode === 'op' ? 'op' : 'pri'), o.save ? 'Start new run (replaces save)' : 'Start', () => {
-        o.onStart({ mode, difficulty: diff, archetype: arch, seedText: seedInput ? seedInput.value.trim() : '' });
-      }));
-      box.appendChild(el('h3', null, 'Records'));
-      const recs = [['std-easy', 'Easy'], ['std-normal', 'Normal'], ['std-hard', 'Hard'], ['op', 'Overpowered'], ['daily', 'Daily (today)'], ['seed', 'Seeded']];
-      for (const [k, l] of recs) {
-        const v = o.records[k];
-        box.appendChild(el('div', 'bm-rec', `<span>${l}</span><b>${v ? 'wave ' + v : '—'}</b>`));
+      const start = btn('bm-btn bm-start ' + (mode === 'op' ? 'op' : o.save ? 'alt' : 'pri'), o.save ? 'Start new run' : 'Start', () => {
+        o.onStart({ mode, difficulty: diff, archetype: arch, seedText: mode === 'seed' ? seedText.trim() : (o.last.seedText || '') });
+      });
+      start.dataset.fk = 'start';
+      sec.appendChild(start);
+      if (o.save) sec.appendChild(el('p', 'bm-desc bm-c', 'This replaces your saved run.'));
+      // records
+      const have = RECS.filter(([k]) => o.records[k]);
+      const rec = el('div', 'bm-recs');
+      rec.appendChild(el('h3', null, 'Records'));
+      if (!have.length) rec.appendChild(el('p', 'bm-desc', 'No records yet. Your best wave in each mode shows here.'));
+      else {
+        const grid = el('div', 'bm-recgrid');
+        for (const [k, l] of have) grid.appendChild(el('div', 'bm-stat', `<small>${l}</small><b>Wave ${o.records[k]}</b>`));
+        rec.appendChild(grid);
       }
-      box.appendChild(btn('bm-btn', 'How to play', () => showHow(render)));
-      box.appendChild(btn('bm-btn', 'Back to games', () => o.onExit()));
-    });
+      box.appendChild(rec);
+      const foot = el('div', 'bm-foot');
+      const how = btn('bm-btn', 'How to play', () => showHow(render));
+      how.dataset.fk = 'how';
+      foot.append(how, btn('bm-btn', 'Back to games', () => o.onExit()));
+      box.appendChild(foot);
+    }
     render();
   }
 

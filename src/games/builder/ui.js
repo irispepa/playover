@@ -7,6 +7,7 @@ import { resIcon, uiIcon } from './icons.js';
 import { cache, rates, prodPerMin, siteMult, canPlace, canAfford, radiusOf, reachOf, maxWorkers, isComplete, charterPop, forDisc, isWater } from './world.js';
 import { upgradeInfo, goalProgress, currentGoal, needsUnmet, happyBreakdown, dayOf, repairCost, dwellingHappy } from './sim.js';
 import { islandName } from './gen.js';
+import { HELP } from './help.js';
 
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export function fmt(n) {
@@ -33,16 +34,6 @@ const STATUS_TEXT = {
   full: ['warn', 'Storage full'], damaged: ['bad', 'Damaged: repair it to get it working'], paused: ['warn', 'Paused'], fire: ['bad', 'On fire!'],
   needs: ['bad', 'Needs not met'], warn: ['warn', 'A need has lapsed'],
 };
-
-const HELP = [
-  { t: 'Welcome to Tidewater', b: ['You lead a handful of settlers stranded on a wild island. Your job is to grow them into a chartered town.', 'Drag with one finger to look around and pinch to zoom. Tap any tile to see what is there.'], img: ['townhall:1', 'house:1'] },
-  { t: 'Building', b: ['Pick a building from the tray at the bottom. Glowing tiles show where it can go, and brighter green means a better spot.', 'Tap a tile, check the preview, then press Build. Nothing is ever built by a single tap.'], img: ['woodcutter:1', 'fishing:1'] },
-  { t: 'People and work', b: ['Houses bring settlers, but newcomers only come when there is food, a free bed and work for them.', 'Each building needs workers. A grey marker means nobody is staffing it. Star a building in its info sheet to give it workers first, or pause one to free its crew.'], img: ['forager:1', 'farm:1'] },
-  { t: 'Food and stores', b: ['Everyone eats. Watch the numbers under each resource: green is rising, red is falling.', 'Every good has a storage limit. Warehouses raise it and let you build further from the Town Hall.'], img: ['warehouse:1', 'bakery:1'] },
-  { t: 'Better homes', b: ['Huts become Cottages when a Well and a Market are in range, and Manors with a Tavern and a supply of cloth. Bigger homes hold more people and pay more taxes.', 'Quarries, mines, mills and smithies are noisy. Keep them away from homes.'], img: ['house:2', 'house:3'] },
-  { t: 'Weather and trade', b: ['Storms, fires and pests strike now and then. A Well puts out fires in its range before they spread.', 'Build a Dock and ships will call with deals. If things go badly, the mainland sends a relief ship, so you can always recover.'], img: ['dock:1', 'well:1'] },
-  { t: 'The Royal Charter', b: ['Follow the goal at the top of the screen. Milestones unlock new buildings.', 'Build the Charter Hall to win the charter and score your colony, then keep building for as long as you like.'], img: ['charter:1', 'lighthouse:1'] },
-];
 
 export function createUI(host, game) {
   const root = document.createElement('div');
@@ -75,7 +66,8 @@ export function createUI(host, game) {
         <div class="tw-cards"></div>
       </div>
     </div>
-    <div class="tw-modal"><div class="tw-mbox"></div></div>`;
+    <div class="tw-modal"><div class="tw-mbox"></div></div>
+    <div class="tw-coach" role="dialog" aria-modal="true" aria-label="Tip"><div class="ring"></div><div class="bub"><i class="ar"></i><div class="tx"></div><div class="ft"><span class="ct"></span><button class="tw-btn primary">Got it</button></div></div></div>`;
   host.appendChild(root);
   const $ = (q) => root.querySelector(q);
   const resEl = $('.tw-res'), goalEl = $('.tw-goal'), toastsEl = $('.tw-toasts'), tipEl = $('.tw-tip'), shipBtn = $('.tw-shipbtn');
@@ -416,7 +408,7 @@ export function createUI(host, game) {
       const focused = document.activeElement && document.activeElement.classList.contains('tw-input');
       if (focused && !force) return;
       mbox.innerHTML = html; lastModal = html;
-      mbox.scrollTop = st;
+      mbox.scrollTop = modal.kind === 'help' ? 0 : st;
     }
   }
   function modalHTML() {
@@ -425,36 +417,43 @@ export function createUI(host, game) {
     const closeBtn = `<button class="tw-btn" data-a="closeModal" aria-label="Close">${uiIcon('close')}</button>`;
     if (k === 'title') {
       const sv = game.saveInfo();
-      return `<div class="tw-title"><div class="logo">Tidewater</div><div class="sub">Settle a wild island. Grow a chartered town.</div></div>
-        ${sv ? `<div class="tw-save"><b>${esc(sv.name)}</b><br>${esc(sv.line)}</div>` : ''}
+      const top = topBest();
+      return `<div class="tw-title"><div class="logo">Tidewater</div><div class="sub">Settle a wild island. Grow a chartered town.</div>
+          <div class="tw-facts"><span>${resIcon('house', 'sm')}${BUILD_ORDER.length} buildings</span><span>${uiIcon('scroll', 'sm')}${MILESTONES.length} milestones</span><span>${uiIcon('ship', 'sm')}Trading ships</span></div></div>
+        ${sv ? `<div class="tw-save"><span class="tw-eyebrow">Saved island</span><b>${esc(sv.name)}</b><span class="ln">${esc(sv.line)}</span></div>` : ''}
         <div class="tw-col">
           ${sv ? `<button class="tw-btn primary" data-a="continue">${uiIcon('play')} Continue</button>` : ''}
           <button class="tw-btn ${sv ? '' : 'primary'}" data-a="newIsland">New island</button>
           <button class="tw-btn" data-a="m-help">How to play</button>
-          <button class="tw-btn" data-a="backMenu">Back to menu</button>
-        </div>`;
+          <button class="tw-btn quiet" data-a="backMenu">Back to menu</button>
+        </div>
+        ${top ? `<div class="tw-best">Best charter: <b>${top.score}</b> · ${esc(top.name)}, ${esc(DIFFICULTY[top.diff].name)}</div>` : ''}`;
     }
     if (k === 'new') {
       const o = game.newOpts;
-      const best = game.bests();
+      const best = game.bests()[o.difficulty];
+      const z = SIZES[o.size];
+      const cp = Math.round(z.charterPop * (o.difficulty === 'gentle' ? 0.85 : o.difficulty === 'harsh' ? 1.1 : 1));
       return `<div class="tw-mhead"><h2>New island</h2></div>
-        <div class="tw-save" style="margin-top:4px"><b>${esc(islandName(o.seed))}</b><br>Seed ${esc(o.seed)} · the island behind this card is a preview.</div>
-        <h3>Size</h3><div class="tw-seg">${Object.entries(SIZES).map(([id, z]) => `<button class="tw-btn ${o.size === id ? 'on' : ''}" data-a="size" data-v="${id}">${z.name}</button>`).join('')}</div>
-        <h3>Difficulty</h3><div class="tw-seg">${Object.entries(DIFFICULTY).map(([id, z]) => `<button class="tw-btn ${o.difficulty === id ? 'on' : ''}" data-a="diff" data-v="${id}">${z.name}</button>`).join('')}</div>
-        <div class="tw-big" style="margin-top:6px">${esc(DIFFICULTY[o.difficulty].desc)} Charter at ${Math.round(SIZES[o.size].charterPop * (o.difficulty === 'gentle' ? 0.85 : o.difficulty === 'harsh' ? 1.1 : 1))} people.${best[o.difficulty] ? ` Best: ${best[o.difficulty].score}.` : ''}</div>
-        <h3>Seed</h3><div class="tw-row"><input class="tw-input" data-in="seed" value="${esc(o.seed)}" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="tw-btn" data-a="dice" aria-label="Random seed">${uiIcon('dice')}</button></div>
+        <div class="tw-save"><span class="tw-eyebrow">Preview behind this card</span><b>${esc(islandName(o.seed))}</b></div>
+        <h3>Size</h3><div class="tw-seg">${Object.entries(SIZES).map(([id, zz]) => `<button class="tw-btn ${o.size === id ? 'on' : ''}" data-a="size" data-v="${id}" aria-pressed="${o.size === id}">${zz.name}</button>`).join('')}</div>
+        <div class="tw-desc">${z.n} × ${z.n} tiles. The charter needs ${cp} people.</div>
+        <h3>Difficulty</h3><div class="tw-seg">${Object.entries(DIFFICULTY).map(([id, zz]) => `<button class="tw-btn ${o.difficulty === id ? 'on' : ''}" data-a="diff" data-v="${id}" aria-pressed="${o.difficulty === id}">${zz.name}</button>`).join('')}</div>
+        <div class="tw-desc">${esc(DIFFICULTY[o.difficulty].desc)}${best ? ` Your best here: <b>${best.score}</b>.` : ''}</div>
+        <h3>Seed</h3><div class="tw-row"><input class="tw-input" data-in="seed" value="${esc(o.seed)}" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Seed"><button class="tw-btn" data-a="dice" aria-label="Random seed">${uiIcon('dice')}</button></div>
+        <div class="tw-desc">The same seed always makes the same island.</div>
         <div class="tw-col"><button class="tw-btn primary" data-a="start">Settle ${esc(islandName(o.seed))}</button>
-        <button class="tw-btn" data-a="newBack">Back</button></div>`;
+        <button class="tw-btn quiet" data-a="newBack">Back</button></div>`;
     }
     if (k === 'menu') {
       return `<div class="tw-mhead"><h2>Paused</h2>${closeBtn}</div>
-        <div class="tw-big">${esc(s.name)} · Day ${dayOf(s)} · ${s.pop} people · ${SIZES[s.size].name}, ${DIFFICULTY[s.difficulty].name}</div>
+        <div class="tw-save"><b>${esc(s.name)}</b><span class="ln">Day ${dayOf(s)} · ${s.pop} people · ${SIZES[s.size].name}, ${DIFFICULTY[s.difficulty].name}</span></div>
         <div class="tw-col">
           <button class="tw-btn primary" data-a="resume">${uiIcon('play')} Resume</button>
-          <button class="tw-btn" data-a="m-goals">Goals and chronicle</button>
-          <button class="tw-btn" data-a="m-help">How to play</button>
+          <button class="tw-btn" data-a="m-goals">${uiIcon('scroll')} Goals and chronicle</button>
+          <button class="tw-btn" data-a="m-help">${uiIcon('info')} How to play</button>
           <button class="tw-btn" data-a="m-new">New island</button>
-          <button class="tw-btn" data-a="m-exit">Save and exit to menu</button>
+          <button class="tw-btn quiet" data-a="m-exit">Save and exit to menu</button>
         </div>`;
     }
     if (k === 'confirmNew') {
@@ -462,14 +461,20 @@ export function createUI(host, game) {
         <div class="tw-col"><button class="tw-btn danger" data-a="newIsland">Yes, find a new island</button><button class="tw-btn" data-a="closeModal">Keep playing</button></div>`;
     }
     if (k === 'help') {
-      const p = modal.page || 0;
+      const p = Math.max(0, Math.min(HELP.length - 1, modal.page || 0));
       const pg = HELP[p];
-      return `<div class="tw-mhead"><h2>${esc(pg.t)}</h2>${closeBtn}</div>
-        <div class="tw-help-ill">${pg.img.map((t) => `<img src="${game.thumbs[t]}" alt="">`).join('')}</div>
-        ${pg.b.map((t) => `<p>${esc(t)}</p>`).join('')}
-        <div class="tw-pdots">${HELP.map((_, i) => `<i class="${i === p ? 'on' : ''}"></i>`).join('')}</div>
+      const last = p === HELP.length - 1;
+      const endLabel = modal.first ? 'Start playing' : game.live ? 'Back to the island' : 'Done';
+      return `<div class="tw-mhead"><span class="tw-eyebrow">How to play · ${p + 1} of ${HELP.length}</span>
+          ${last ? closeBtn : '<button class="tw-btn quiet tw-skip" data-a="closeModal">Skip</button>'}</div>
+        <div class="tw-hpage ${modal.dir > 0 ? 'fwd' : modal.dir < 0 ? 'back' : ''}">
+          <div class="tw-hpic">${pg.pic(game)}</div>
+          <h2>${esc(pg.t)}</h2>
+          <ul class="tw-hl">${pg.p.map(([ic, t]) => `<li><span class="ic">${ic}</span><span>${esc(t)}</span></li>`).join('')}</ul>
+        </div>
+        <div class="tw-pdots" aria-hidden="true">${HELP.map((_, i) => `<i class="${i === p ? 'on' : ''}"></i>`).join('')}</div>
         <div class="tw-pager"><button class="tw-btn" data-a="helpPrev" ${p === 0 ? 'disabled' : ''}>Back</button>
-        ${p < HELP.length - 1 ? '<button class="tw-btn primary" data-a="helpNext">Next</button>' : '<button class="tw-btn primary" data-a="closeModal">Let’s go</button>'}</div>`;
+        ${last ? `<button class="tw-btn primary" data-a="closeModal">${uiIcon('play', 'sm')} ${endLabel}</button>` : `<button class="tw-btn primary" data-a="helpNext">Next ${uiIcon('arrow', 'sm')}</button>`}</div>`;
     }
     if (k === 'goals') {
       const gt = modal.tab || 'goals';
@@ -506,7 +511,7 @@ export function createUI(host, game) {
           <div class="tw-kv"><span>Events weathered</span><span>${s.stats.events}</span></div>
           ${s.charter ? `<div class="tw-kv"><span>Charter score</span><span>${s.charter.score}</span></div>` : ''}
           <h3>Best charters</h3>
-          ${Object.entries(DIFFICULTY).map(([id, z]) => `<div class="tw-kv"><span>${z.name}</span><span>${best[id] ? `${best[id].score} · ${esc(best[id].name)}` : '—'}</span></div>`).join('')}`;
+          ${Object.keys(DIFFICULTY).some((id) => best[id]) ? Object.entries(DIFFICULTY).filter(([id]) => best[id]).map(([id, z]) => `<div class="tw-kv"><span>${z.name}</span><span>${best[id].score} · ${esc(best[id].name)}</span></div>`).join('') : '<div class="tw-desc">No charters yet. Build the Charter Hall to set one.</div>'}`;
       }
       return `<div class="tw-mhead"><h2>${gt === 'goals' ? 'Goals' : gt === 'log' ? 'Chronicle' : 'Records'}</h2>${closeBtn}</div>
         <div class="tw-tabs2">${[['goals', 'Goals'], ['log', 'Chronicle'], ['stats', 'Records']].map(([id, n]) => `<button class="tw-btn ${gt === id ? 'on' : ''}" data-a="gtab" data-v="${id}">${n}</button>`).join('')}</div>
@@ -523,20 +528,28 @@ export function createUI(host, game) {
           <button class="tw-btn ${d.done ? '' : can ? 'primary' : ''}" data-a="deal" data-i="${i}" ${d.done || !can ? 'disabled' : ''}>${d.done ? 'Done' : 'Trade'}</button></div>`;
       }).join('');
       return `<div class="tw-mhead">${uiIcon('ship', 'lg')}<h2>The ${esc(ship.name)}</h2>${closeBtn}</div>
-        <div class="tw-big">Out of ${esc(ship.port)} · sails in ${Math.max(0, Math.ceil(ship.leave - s.t))}s · you give → you get</div>${rows}
-        <div class="tw-big" style="margin-top:8px">${resIcon('gold', 'sm')} ${fmt(s.res.gold)} in the treasury</div>`;
+        <div class="tw-desc">Out of ${esc(ship.port)} · sails in <span class="tw-num">${Math.max(0, Math.ceil(ship.leave - s.t))}s</span></div>
+        <div class="tw-dealhd"><span>You give</span>${uiIcon('arrow', 'sm')}<span>You get</span></div>${rows}
+        <div class="tw-desc tw-treasury">${resIcon('gold', 'sm')} <span class="tw-num">${fmt(s.res.gold)}</span> gold in the treasury</div>`;
     }
     if (k === 'charter') {
       const ch = s.charter;
       const best = game.bests()[s.difficulty];
       return `<div class="tw-title"><div class="logo" style="font-size:30px">Royal Charter!</div><div class="sub">${esc(s.name)} is now a free town.</div></div>
         <div class="tw-score">${ch.score}</div>
-        ${ch.parts.map(([n, v]) => `<div class="tw-kv"><span>${esc(n)}</span><span>${v}</span></div>`).join('')}
-        <div class="tw-big" style="margin-top:6px;text-align:center">${best && best.score > ch.score ? `Best on ${DIFFICULTY[s.difficulty].name}: ${best.score}` : `A new best on ${DIFFICULTY[s.difficulty].name}!`}</div>
-        <div class="tw-col"><button class="tw-btn primary" data-a="endless">Keep building (endless)</button>
-        <button class="tw-btn" data-a="m-new">New island</button><button class="tw-btn" data-a="m-exit">Exit to menu</button></div>`;
+        <div class="tw-parts">${ch.parts.map(([n, v]) => `<div class="tw-kv"><span>${esc(n)}</span><span>${v}</span></div>`).join('')}</div>
+        <div class="tw-desc" style="text-align:center">${best && best.score > ch.score ? `Best on ${DIFFICULTY[s.difficulty].name}: ${best.score}` : `A new best on ${DIFFICULTY[s.difficulty].name}!`}</div>
+        <div class="tw-col"><button class="tw-btn primary" data-a="endless">Keep building</button>
+        <button class="tw-btn" data-a="m-new">New island</button><button class="tw-btn quiet" data-a="m-exit">Exit to menu</button></div>
+        <div class="tw-desc" style="text-align:center">Keep building to get endless goals and rewards.</div>`;
     }
     return '';
+  }
+  function topBest() {
+    const best = game.bests();
+    let top = null;
+    for (const id in best) if (best[id] && DIFFICULTY[id] && (!top || best[id].score > top.score)) top = { ...best[id], diff: id };
+    return top;
   }
   function partLabel(p) {
     switch (p.kind) {
@@ -554,6 +567,7 @@ export function createUI(host, game) {
     if (!el || !root.contains(el)) return;
     const a = el.dataset.a;
     if (el.disabled) return;
+    if (performance.now() < swipeUntil && mbox.contains(el)) return; // a swipe just turned the page
     if (a !== 'chip') hideTip();
     const id = el.dataset.id ? Number(el.dataset.id) : -1;
     switch (a) {
@@ -580,8 +594,8 @@ export function createUI(host, game) {
       case 'resume': game.tap(); if (game.speed === 0) game.setSpeed(1); hideModal(); break;
       case 'm-goals': game.tap(); showModal('goals'); break;
       case 'm-help': game.tap(); showModal('help', { page: 0, back: modal && modal.kind }); break;
-      case 'helpNext': game.tap(); modal.page++; renderModal(true); break;
-      case 'helpPrev': game.tap(); modal.page = Math.max(0, modal.page - 1); renderModal(true); break;
+      case 'helpNext': helpGo(1); break;
+      case 'helpPrev': helpGo(-1); break;
       case 'gtab': game.tap(); modal.tab = el.dataset.v; renderModal(true); break;
       case 'm-new': game.tap(); if (game.live && !game.s.charter) showModal('confirmNew'); else game.openNew(); break;
       case 'newIsland': game.tap(); game.openNew(); break;
@@ -605,8 +619,104 @@ export function createUI(host, game) {
       seedTimer = setTimeout(() => { if (v) game.setNewOpt('seed', v, true); }, 450);
     }
   }
-  function onKey(e) { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.in === 'seed') e.target.blur(); }
-  const mark = () => { interactAt = performance.now(); };
+  let usedKeys = false;
+  function onKey(e) {
+    usedKeys = true;
+    if (e.key === 'Enter' && e.target.dataset && e.target.dataset.in === 'seed') e.target.blur();
+    if (modal && modal.kind === 'help' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); helpGo(e.key === 'ArrowRight' ? 1 : -1); }
+  }
+  // ---------- How to play paging and swipe ----------
+  function helpGo(dir) {
+    if (!modal || modal.kind !== 'help') return;
+    const p = Math.max(0, Math.min(HELP.length - 1, (modal.page || 0) + dir));
+    if (p === modal.page) return;
+    game.tap();
+    modal.page = p; modal.dir = dir;
+    renderModal(true);
+    const f = dir > 0 ? mbox.querySelector('[data-a="helpNext"]') || [...mbox.querySelectorAll('[data-a="closeModal"]')].pop()
+      : mbox.querySelector('[data-a="helpPrev"]:not([disabled])');
+    if (f && mbox.contains(document.activeElement)) f.focus({ preventScroll: true });
+  }
+  let swipe = null, swipeUntil = 0;
+  function swipeDown(e) { swipe = modal && modal.kind === 'help' && e.isPrimary ? { x: e.clientX, y: e.clientY, id: e.pointerId } : null; }
+  function swipeUp(e) {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+    swipe = null;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    swipeUntil = performance.now() + 200;
+    helpGo(dx < 0 ? 1 : -1);
+  }
+  const swipeCancel = () => { swipe = null; };
+  mbox.addEventListener('pointerdown', swipeDown);
+  mbox.addEventListener('pointerup', swipeUp);
+  mbox.addEventListener('pointercancel', swipeCancel);
+
+  // ---------- First-run coach marks ----------
+  const coachEl = $('.tw-coach'), coachRing = coachEl.querySelector('.ring'), coachBub = coachEl.querySelector('.bub');
+  const COACH = [
+    { q: '.tw-goal', text: 'This is your goal. Tap it any time to see every goal and its reward.' },
+    { q: '.tw-res', text: 'These are your stores. The small number is the change per minute. Tap a chip for details.' },
+    { q: '.tw-tray', text: 'Build from this tray. Pick a building, tap a glowing tile, then press Build.' },
+  ];
+  let coachStep = -1, coachDone = null;
+  function startCoach(onDone) {
+    if (coachStep >= 0) return;
+    coachDone = onDone || null;
+    coachStep = 0;
+    hideTip();
+    game.onModal(true, 'coach');
+    coachEl.classList.add('show');
+    placeCoach();
+    // Move focus into the tip for keyboard users only, so touch players never see a stray focus ring.
+    if (usedKeys) coachBub.querySelector('button').focus({ preventScroll: true });
+  }
+  function placeCoach() {
+    if (coachStep < 0) return;
+    const st = COACH[coachStep];
+    const target = $(st.q);
+    const host = root.getBoundingClientRect();
+    const r = target && target.offsetParent ? target.getBoundingClientRect() : null;
+    coachBub.querySelector('.tx').textContent = st.text;
+    coachBub.querySelector('.ct').textContent = `${coachStep + 1} of ${COACH.length}`;
+    coachBub.querySelector('button').textContent = coachStep === COACH.length - 1 ? 'Done' : 'Next';
+    if (!r) { coachRing.style.display = 'none'; coachBub.style.top = '40%'; coachBub.style.bottom = ''; return; }
+    const pad = 4;
+    const x = r.left - host.left, y = r.top - host.top;
+    coachRing.style.display = '';
+    Object.assign(coachRing.style, { left: `${x - pad}px`, top: `${y - pad}px`, width: `${r.width + pad * 2}px`, height: `${r.height + pad * 2}px` });
+    const below = y + r.height / 2 < host.height / 2;
+    const bw = Math.min(300, host.width - 24);
+    const cx = x + r.width / 2;
+    const left = Math.max(12, Math.min(host.width - 12 - bw, cx - bw / 2));
+    coachBub.style.width = `${bw}px`;
+    coachBub.style.left = `${left}px`;
+    coachBub.classList.toggle('up', !below);
+    if (below) { coachBub.style.top = `${y + r.height + pad + 12}px`; coachBub.style.bottom = ''; }
+    else { coachBub.style.bottom = `${host.height - y + pad + 12}px`; coachBub.style.top = ''; }
+    coachBub.querySelector('.ar').style.left = `${Math.max(18, Math.min(bw - 18, cx - left))}px`;
+  }
+  function coachNext(e) {
+    if (coachStep < 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    game.tap();
+    coachStep++;
+    if (coachStep < COACH.length) { placeCoach(); return; }
+    endCoach();
+  }
+  function endCoach() {
+    if (coachStep < 0) return;
+    coachStep = -1;
+    coachEl.classList.remove('show');
+    game.onModal(false, 'coach');
+    const f = coachDone; coachDone = null;
+    if (f) f();
+  }
+  const onResize = () => placeCoach();
+  coachEl.addEventListener('click', coachNext);
+  window.addEventListener('resize', onResize);
+  const mark = () => { interactAt = performance.now(); usedKeys = false; };
   root.addEventListener('click', onClick);
   root.addEventListener('pointerdown', mark, true);
   root.addEventListener('input', onInput);
@@ -638,11 +748,12 @@ export function createUI(host, game) {
   function setHudVisible(v) {
     for (const q of ['.tw-top', '.tw-bottom', '.tw-toasts']) $(q).style.display = v ? '' : 'none';
     if (!v) { shipBtn.classList.remove('show'); hintEl.classList.remove('show'); }
+    if (!v && coachStep >= 0) { coachStep = -1; coachDone = null; coachEl.classList.remove('show'); }
   }
 
   return {
-    update, toast, flash, showModal, hideModal, renderTray, renderSheet, renderConfirm, setHudVisible,
-    get modalKind() { return modal ? modal.kind : null; },
+    update, toast, flash, showModal, hideModal, renderTray, renderSheet, renderConfirm, setHudVisible, startCoach,
+    get modalKind() { return modal ? modal.kind : coachStep >= 0 ? 'coach' : null; },
     refreshModal() { renderModal(true); },
     refreshModalSoft() {
       if (!modal || modal.kind !== 'new') return;
@@ -661,6 +772,11 @@ export function createUI(host, game) {
       root.removeEventListener('pointerdown', mark, true);
       root.removeEventListener('input', onInput);
       root.removeEventListener('keydown', onKey);
+      mbox.removeEventListener('pointerdown', swipeDown);
+      mbox.removeEventListener('pointerup', swipeUp);
+      mbox.removeEventListener('pointercancel', swipeCancel);
+      coachEl.removeEventListener('click', coachNext);
+      window.removeEventListener('resize', onResize);
       root.remove();
     },
   };
