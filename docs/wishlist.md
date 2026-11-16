@@ -24,3 +24,7 @@ Deferred items found while building; none block play.
 - Projectiles in flight are dropped when saving mid-wave.
 - In Hero mode a targeted ability can only be cancelled by tapping off the map.
 - Hero view leaves the lower third of the screen empty.
+
+## New pocket games
+- Play Odd Crown on a real phone for longer sessions; tune opponent pacing from human feedback.
+- Verify all three new games in iPhone Safari standalone: physical safe areas, touch accuracy, battery use and frame rate.
