@@ -1,0 +1,37 @@
+import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+
+export default defineConfig({
+  base: './',
+  build: { target: 'es2020', chunkSizeWarningLimit: 1200 },
+  // NO_HMR=1 serves without hot reload, for automated play tests while files are changing.
+  server: process.env.NO_HMR ? { hmr: false, watch: null } : {},
+  plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['icon-180.png', 'icon-192.png', 'icon-512.png'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,png,svg,woff2,json}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+      },
+      manifest: {
+        name: 'Flight Games',
+        short_name: 'Flight Games',
+        description: 'Three offline games for the flight.',
+        display: 'standalone',
+        orientation: 'portrait',
+        background_color: '#0e1420',
+        theme_color: '#0e1420',
+        start_url: './',
+        scope: './',
+        icons: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+    }),
+  ],
+});

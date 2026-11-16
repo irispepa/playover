@@ -1,0 +1,32 @@
+:root {
+  --bg: #0e1420; --panel: #18212f; --panel-2: #212c3d; --line: #2f3d52;
+  --text: #eef2f7; --muted: #9aa8bc; --accent: #f0b44c; --good: #4cc9a0; --bad: #e25c5c;
+  --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font);
+  overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#app { position: fixed; inset: 0; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; touch-action: manipulation; }
+
+.menu { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: calc(var(--sat) + 28px) calc(var(--sar) + 20px) calc(var(--sab) + 24px) calc(var(--sal) + 20px);
+  display: flex; flex-direction: column; gap: 14px; max-width: 520px; margin: 0 auto; }
+.menu h1 { font-size: 34px; letter-spacing: -0.02em; margin: 0; }
+.menu .sub { color: var(--muted); margin: -6px 0 8px; font-size: 15px; }
+.card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; width: 100%;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px; position: relative; overflow: hidden; }
+.card:active { background: var(--panel-2); }
+.card .title { font-size: 21px; font-weight: 700; color: var(--card-color, var(--accent)); }
+.card .tag { color: var(--muted); font-size: 14px; line-height: 1.35; }
+.card .best { font-size: 13px; color: var(--card-color, var(--accent)); font-weight: 600; margin-top: 2px; }
+.menu-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; padding-top: 8px; }
+.pill { border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; color: var(--text); background: var(--panel); min-height: 36px; }
+
+.game-root { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
+.stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.stage-ui { position: absolute; inset: 0; pointer-events: none;
+  padding: var(--sat) var(--sar) var(--sab) var(--sal); }
+.load-msg { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); padding: 24px; text-align: center; }
