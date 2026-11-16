@@ -11,7 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon-180.png', 'icon-192.png', 'icon-512.png'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2,json}'],
+        globPatterns: ['**/*.{js,css,html,png,jpg,jpeg,webp,avif,svg,woff2,json,glb,mp3,ogg,m4a}'],
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
@@ -19,7 +20,7 @@ export default defineConfig({
       manifest: {
         name: 'Flight Games',
         short_name: 'Flight Games',
-        description: 'Three offline games for the flight.',
+        description: 'Six offline games for the flight.',
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#0e1420',

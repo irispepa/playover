@@ -14,6 +14,12 @@ const GAMES = [
     color: '#f0b44c', load: () => import('./games/roguelike/index.js') },
   { id: 'towerdefence', title: 'Bastion Maze', tagline: 'Build the maze, upgrade towers, and take the field yourself against endless waves.',
     color: '#e25c5c', load: () => import('./games/towerdefence/index.js') },
+  { id: 'everbrook', title: 'Everbrook', tagline: 'Raise a peaceful river town from the first hearth to the age of steam. No wars, only neighbours.',
+    color: '#8fd06a', load: () => import('./games/everbrook/index.js') },
+  { id: 'lanternfall', title: 'Lanternfall', tagline: 'Seven days in a canal town. Make friends, sharpen your wits, and find who took the Moon Lantern.',
+    color: '#f29d7e', load: () => import('./games/lanternfall/index.js') },
+  { id: 'helpdesk', title: 'Patch & Kettle', tagline: 'Cozy IT for a house full of neighbours. Fix small things, introduce people, pet the server cat.',
+    color: '#f5c86a', load: () => import('./games/helpdesk/index.js') },
 ];
 
 const app = document.getElementById('app');
@@ -37,7 +43,7 @@ function showMenu() {
   if (current) { try { current.dispose(); } catch (err) { console.error(err); } current = null; }
   app.replaceChildren();
   const menu = el('div', 'menu');
-  menu.append(el('h1', null, 'Flight Games'), el('div', 'sub', 'Three games, no signal needed.'));
+  menu.append(el('h1', null, 'Flight Games'), el('div', 'sub', 'Six games, no signal needed.'));
   for (const g of GAMES) {
     const card = el('button', 'card');
     card.style.setProperty('--card-color', g.color);
@@ -89,4 +95,6 @@ async function launch(game) {
   }
 }
 
-showMenu();
+// ?game=<id> opens a game directly (handy for testing and for home-screen shortcuts).
+const direct = GAMES.find((g) => g.id === new URLSearchParams(location.search).get('game'));
+if (direct) launch(direct); else showMenu();

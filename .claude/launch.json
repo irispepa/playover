@@ -2,6 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     { "name": "flight-games", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "--port", "5310", "--strictPort"], "port": 5310 },
-    { "name": "flight-games-preview", "runtimeExecutable": "npm", "runtimeArgs": ["run", "preview", "--", "--port", "5311", "--strictPort"], "port": 5311 }
+    { "name": "flight-games-preview", "runtimeExecutable": "npm", "runtimeArgs": ["run", "preview", "--", "--port", "5311", "--strictPort"], "port": 5311 },
+    { "name": "new-games-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "--port", "5320", "--strictPort"], "port": 5320 }
   ]
 }
