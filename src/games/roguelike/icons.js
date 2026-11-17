@@ -63,3 +63,9 @@ export function icon(name, size = 18, color) {
 }
 
 export const SLOT_ICON = { weapon: 'sword', armor: 'shield', trinket: 'ring' };
+
+// The same icon as a nested <svg> placed inside a larger SVG drawing (x, y = top-left, in the parent's units).
+export function glyph(name, x, y, size, color) {
+  const body = P[name] || P.spark;
+  return `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 24 24" style="color:${color || 'currentColor'}">${body}</svg>`;
+}

@@ -112,7 +112,14 @@ export default {
       save();
       ctx.audio.play('level');
       ui.toast(`You land on ${s.name}. Start with a few Houses, a Woodcutter and a Fishing Hut.`, 'good');
-      if (!store.get('seenHelp', false)) { store.set('seenHelp', true); ui.showModal('help', { page: 0 }); }
+      // First run: the guide opens, then short pointers at the goal, stores and tray (once ever).
+      const coach = !store.get('coachSeen', false);
+      game.coachAfterHelp = false;
+      if (!store.get('seenHelp', false)) {
+        store.set('seenHelp', true);
+        game.coachAfterHelp = coach;
+        ui.showModal('help', { page: 0, first: true });
+      } else if (coach) startCoach();
     };
     game.continueGame = () => {
       const s = game.live ? game.s : deserialize(store.get('save', null));
@@ -124,11 +131,19 @@ export default {
     game.exit = () => { save(); ctx.exit(); };
     game.endless = () => { if (game.s) { startEndless(game.s); save(); } };
 
+    // A modal and a coach mark can be up at once; the game stays paused while either one is.
+    const pauseBy = { modal: false, coach: false };
     game.onModal = (open, kind) => {
-      game.modalPause = open && kind !== 'title' && kind !== 'new';
+      pauseBy[kind === 'coach' ? 'coach' : 'modal'] = open && kind !== 'title' && kind !== 'new';
+      game.modalPause = pauseBy.modal || pauseBy.coach;
       if (open && game.live) save();
-      if (!open && !game.live && kind !== 'new' && kind !== 'confirmNew') ui.showModal('title');
+      if (!open && !game.live && kind !== 'new' && kind !== 'confirmNew' && kind !== 'coach') ui.showModal('title');
+      if (!open && kind === 'help' && game.coachAfterHelp && game.live) { game.coachAfterHelp = false; startCoach(); }
     };
+    function startCoach() {
+      store.set('coachSeen', true);
+      ui.startCoach();
+    }
     game.setSpeed = (v) => { game.speed = v; store.set('speed', v); if (v === 0) save(); };
 
     // ---------- selection and placement ----------

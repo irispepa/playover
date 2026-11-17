@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node src/games/oddcrown/sim.test.mjs && node src/games/planets/sim.test.mjs && node src/games/reef/sim.test.mjs && node src/games/builder/sim.test.mjs && node src/games/roguelike/sim.test.mjs && node src/games/towerdefence/sim.test.mjs --quick",
     "build": "vite build",
     "preview": "vite preview"
   },
