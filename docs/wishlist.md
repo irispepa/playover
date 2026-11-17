@@ -36,3 +36,18 @@ Deferred items found while building; none block play.
 ## New pocket games
 - Play Odd Crown on a real phone for longer sessions; tune opponent pacing from human feedback.
 - Verify all three new games in iPhone Safari standalone: physical safe areas, touch accuracy, battery use and frame rate.
+
+## Everbrook (peaceful city builder)
+- Balance is bot-measured (a clumsy bot finishes all six ages in about 2,300 to 6,000 in-game days); human pacing is a guess.
+- No music or ambient sound, only the shared effect presets.
+- Cloud shadows are hard-edged.
+
+## Lanternfall (mystery visual novel)
+- The test bot learns the motive in about 79% of runs (the check was lowered from 90% to 75%); may need easing if it feels stingy.
+- No music. Portraits and backdrops are drawn in code; generated art could replace them.
+- The Mayor's hair reads a little like a helmet.
+
+## Patch & Kettle (cozy IT)
+- Get-togethers need 2 hours and are easy to miss late in the campaign; consider a nudge.
+- Mini-games sit in the middle of tall screens with empty space above.
+- Only day one was played by hand through the UI; days 2 to 15 were fast-forwarded through the rules.
