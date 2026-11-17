@@ -55,6 +55,7 @@ export default {
       if (s !== g.s) view.setState(s);
       g.seen = new Set();
       enter(s);
+      view.controls.focus(s.m.start.x, s.m.start.y, 15);
       save();
       ui.openEra(0);
     };

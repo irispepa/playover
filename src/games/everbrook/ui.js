@@ -89,7 +89,7 @@ export function createUI(stage, g) {
         c.dataset.v = v; c.lastChild.textContent = fmt(v);
       }
       c.classList.toggle('full', k !== 'coin' && s.res[k] >= d.caps[k] - 0.5);
-      c.classList.toggle('low', k === 'food' && (d.starving || (d.rate.food < 0 && s.res.food < d.pop * 1.5)));
+      c.classList.toggle('low', k === 'food' && (d.starving || (d.rate.food < 0 && s.res.food < d.pop * 0.5)));
     }
     const q = S.currentQuest(s);
     const qKey = q ? q.text : s.done ? 'done' : 'none';

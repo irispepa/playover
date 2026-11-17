@@ -76,7 +76,7 @@ export function createInput(el, view, h) {
     else h.onKey?.(k, e);
   }
   const keyup = (e) => keys.delete(e.key.toLowerCase());
-  const leave = () => h.onHover(null);
+  const leave = (e) => { if (e.pointerType === 'mouse') h.onHover(null); };
 
   el.addEventListener('pointerdown', down);
   el.addEventListener('pointermove', move);

@@ -188,3 +188,5 @@
   .eb-toasts { top: calc(var(--sat) + 70px); }
 }
 @media (max-height: 640px) { .eb-side { top: calc(var(--sat) + 160px); gap: 5px; } .eb-item { height: 96px; } }
+
+.eb .eb-acts .eb-btn.ghost, .eb .eb-acts .eb-btn.warn { flex-direction: row; gap: 6px; flex: 0 1 auto; }
