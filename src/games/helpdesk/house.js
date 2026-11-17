@@ -240,8 +240,8 @@ function basementArt(v) {
   o += `<rect x="42" y="${y + 40}" width="52" height="3" rx="1.500" fill="${WOOD_D}"/>`;
   const giftCols = { gift_knot: '#d9964e', gift_cactus: '#5fae7b', gift_bolt: '#f6c445', gift_pin: '#e9473f', gift_zine: '#f08aa6', gift_cosy: '#f6a81c', gift_tape: '#5aa7e0', gift_star: '#7f8fd6' };
   v.gifts.slice(0, 8).forEach((g, k) => { o += `<circle cx="${47 + (k % 8) * 6}" cy="${y + 36}" r="3.300" fill="${giftCols[g] || '#f6c445'}" stroke="#fff" stroke-width=".800"/>`; });
-  if (v.up.chair) o += `<path d="M118 ${fy}v-34c0-8 24-8 24 0v34z" fill="#8fd3b5"/>`;
-  o += personAt(EXTRA_LOOKS.you, 130, fy - 14, 48, v.youExpr || 'smile', 'pk-bob');
+  if (v.up.chair) o += `<path d="M94 ${fy}v-34c0-8 24-8 24 0v34z" fill="#8fd3b5"/>`;
+  o += personAt(EXTRA_LOOKS.you, 106, fy - 14, 48, v.youExpr || 'smile', 'pk-bob');
   o += deskG(130, fy, 60) + `<rect x="118" y="${fy - 44}" width="24" height="16" rx="2.500" fill="#3b3340"/><rect x="120" y="${fy - 42}" width="20" height="12" rx="1.500" fill="#bfe3f5" class="pk-screen"/><path d="M130 ${fy - 28}v2" stroke="#3b3340" stroke-width="3"/>`
     + `<path d="M104 ${fy - 26}h8v-6h-8z" fill="#fff"/><path d="M112 ${fy - 30}h2.500v3H112" stroke="#fff" stroke-width="1.500" fill="none"/><path d="M106 ${fy - 35}q2-3 0-5" stroke="#fff" stroke-width="1.200" fill="none" class="pk-steam"/>`;
   if (v.up.teatin) o += `<rect x="148" y="${fy - 34}" width="10" height="8" rx="2" fill="#e9473f"/><rect x="147" y="${fy - 36}" width="12" height="3" rx="1.500" fill="#f6c445"/>`;

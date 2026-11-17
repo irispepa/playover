@@ -363,3 +363,6 @@ svg .pk-pulse, svg .pk-shake { transform-box: fill-box; transform-origin: center
 
 @media (max-height: 700px) { .pk .pk-navb { height: 50px; } .pk-tip { display: none; } }
 @media (min-width: 760px) { .pk-screen-root { box-shadow: 0 0 0 9999px rgba(255, 246, 228, 0.35); } }
+
+.pk-scene { text-align: left; }
+.pk .pk-btn .pk-cost { color: var(--ink); text-shadow: none; }
