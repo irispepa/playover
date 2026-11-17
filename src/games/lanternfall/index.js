@@ -1,11 +1,10 @@
-// Placeholder until the game lands.
+// Lanternfall: seven days in a canal town, six neighbours and one missing moon.
+import './style.css';
+import { createApp } from './ui/app.js';
+
 export default {
   start(ctx) {
-    const b = document.createElement('button');
-    b.textContent = 'Coming soon — back';
-    b.style.cssText = 'position:absolute;inset:0;margin:auto;height:44px;width:220px;pointer-events:auto';
-    b.onclick = () => ctx.exit();
-    ctx.root.append(b);
-    return { dispose() { b.remove(); } };
+    const app = createApp(ctx);
+    return { dispose() { app.dispose(); } };
   },
 };

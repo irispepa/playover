@@ -133,7 +133,7 @@ export function generateSchedule(seed) {
         slots.push(rng.weighted(entries));
       }
       // Everybody is findable at least twice a day.
-      if (slots.filter(Boolean).length < 2) { const i = slots.indexOf(null); slots[i] = c.home; }
+      while (slots.filter(Boolean).length < 2) slots[slots.indexOf(null)] = c.home;
       days.push(slots);
     }
     sched[who] = days;
