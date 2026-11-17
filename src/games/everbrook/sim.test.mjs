@@ -187,6 +187,7 @@ for (const seed of seeds) {
     { let c = 0; const why = {}; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const r = S.canPlace(s, 'papermill', x, y, { free: true }); if (r.ok) c++; else why[r.why] = (why[r.why] || 0) + 1; } console.log('  papermill spots', c, JSON.stringify(why)); }
     const w = S.currentWonder(s); if (w) console.log('  wonder', w.type, w.stage, JSON.stringify(B[w.type].stages[w.stage]));
   }
+  if (process.env.EB_DUMP) (await import('node:fs')).writeFileSync(`${process.env.EB_DUMP}-${seed}.json`, JSON.stringify(S.toSave(s)));
   // The bot is a clumsy planner; every town must get deep into the chronicle and at least one must finish it.
   check(s.era >= 4, `seed ${seed}: only reached era ${s.era}`);
   finished += s.done ? 1 : 0;

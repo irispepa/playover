@@ -384,8 +384,8 @@ export function createView(stage) {
   const cloudMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
   const clouds = [];
   for (let i = 0; i < 5; i++) {
-    const c = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), cloudMat);
-    c.scale.set(2.5 + Math.random() * 2.5, 0.3, 1.8 + Math.random() * 2);
+    const c = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 8), cloudMat);
+    c.scale.set(1.6 + Math.random() * 1.6, 0.3, 1.2 + Math.random() * 1.2);
     c.position.set(-HALF + Math.random() * N, 12, -HALF + Math.random() * N);
     c.castShadow = true; c.userData.v = 0.25 + Math.random() * 0.3;
     clouds.push(c); root.add(c);
@@ -531,8 +531,7 @@ export function createView(stage) {
       const cols = [0xf2c94c, 0xe2604c, 0x5fb7e8, 0x7fd08a, 0xffffff];
       for (let i = 0; i < 36; i++) { const a = Math.random() * 6.28, r = 0.6 + Math.random() * 1.4; puff(cx, 0.6 + Math.random(), cz, { vx: Math.cos(a) * r, vz: Math.sin(a) * r, vy: 1.2 + Math.random() * 1.4, life: 1.2 + Math.random() * 0.8, size: 0.7, color: cols[i % 5] }); }
     },
-    update,
-    update3: update,
+    update, material: mat,
     dispose() { disposeModels(); mat.dispose(); plain.dispose(); },
   };
 }
