@@ -7,6 +7,24 @@ export function createInput(el, view, h) {
   const TAP_SLOP = 9;
 
   const tileAt = (e) => view.pickTile(e.clientX, e.clientY);
+  const cost = (x, y) => h.stepCost?.(x, y) ?? 0;     // 0 land, 1 water, 2 blocked: corners avoid the costly side
+
+  // Painted tiles go out through emit(). A costly tile (a bridge) waits one step: if the stroke then turns
+  // diagonally around it and the other corner tile is cheaper, the turn is made there instead, so a stroke
+  // never turns mid-stream when it could turn on the bank.
+  let prev = null, held = null;
+  function emit(t) {
+    if (held) {
+      if (prev && Math.abs(prev.x - t.x) === 1 && Math.abs(prev.y - t.y) === 1) {
+        const cx = prev.x + t.x - held.x, cy = prev.y + t.y - held.y;
+        if (cost(cx, cy) < cost(held.x, held.y)) held = { x: cx, y: cy };
+      }
+      h.onPaint(held); prev = held; held = null;
+    }
+    if (prev && cost(t.x, t.y) > 0) { held = t; return; }
+    h.onPaint(t); prev = t;
+  }
+  function endStroke() { if (held) h.onPaint(held); prev = held = null; painting = false; h.onPaintEnd(); }
 
   function down(e) {
     if (e.pointerType === 'mouse' && e.button === 1) e.preventDefault();
@@ -15,10 +33,10 @@ export function createInput(el, view, h) {
     if (pts.size === 1) {
       moved = 0; rotating = e.pointerType === 'mouse' && e.button !== 0;
       painting = !rotating && h.paintMode();
-      lastTile = null;
+      lastTile = null; prev = held = null;
       if (painting) paint(e);
     } else if (pts.size === 2) {
-      if (painting) { painting = false; h.onPaintEnd(); }
+      if (painting) endStroke();
       const [a, b] = [...pts.values()];
       pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
       moved = 99;
@@ -26,14 +44,34 @@ export function createInput(el, view, h) {
   }
   function paint(e) {
     const t = tileAt(e);
-    if (!t || (lastTile && lastTile.x === t.x && lastTile.y === t.y)) return;
-    // Fill in skipped tiles when the finger moves fast.
+    if (!t) return;
+    if (lastTile && lastTile.x === t.x && lastTile.y === t.y) { lastTile = t; return; }
+    // Walk from the last tile in orthogonal unit steps so a stroke is always 4-connected (paths link edge to
+    // edge). At each corner, step across whichever tile edge the straight line between the two hit points
+    // crosses first, which keeps the walk closest to the line.
     if (lastTile) {
-      const steps = Math.max(Math.abs(t.x - lastTile.x), Math.abs(t.y - lastTile.y));
-      for (let i = 1; i < steps; i++) h.onPaint({ x: Math.round(lastTile.x + ((t.x - lastTile.x) * i) / steps), y: Math.round(lastTile.y + ((t.y - lastTile.y) * i) / steps) });
+      let x = lastTile.x, y = lastTile.y;
+      const ax = lastTile.fx, ay = lastTile.fy, dx = t.fx - ax, dy = t.fy - ay, sx = Math.sign(t.x - x), sy = Math.sign(t.y - y);
+      let guard = 4 * 34;
+      while ((x !== t.x || y !== t.y) && guard-- > 0) {
+        if (x === t.x) y += sy;
+        else if (y === t.y) x += sx;
+        else {
+          // A corner: if one of the two steps is cheaper (land rather than water), take it.
+          const cx = cost(x + sx, y), cy = cost(x, y + sy);
+          if (cx !== cy) { if (cx < cy) x += sx; else y += sy; }
+          else {
+            const tx = Math.abs(dx) < 1e-9 ? Infinity : ((sx > 0 ? x + 1 : x) - ax) / dx;
+            const ty = Math.abs(dy) < 1e-9 ? Infinity : ((sy > 0 ? y + 1 : y) - ay) / dy;
+            if (tx <= ty) x += sx; else y += sy;
+          }
+        }
+        if (x !== t.x || y !== t.y) emit({ x, y });
+      }
     }
     lastTile = t;
-    h.onPaint(t);
+    emit(t);
+    if (e.pointerType === 'mouse') h.onHover(t);
   }
   function move(e) {
     const p = pts.get(e.pointerId);
@@ -60,7 +98,7 @@ export function createInput(el, view, h) {
     if (!p) return;
     pts.delete(e.pointerId);
     if (pts.size < 2) pinch = null;
-    if (painting) { painting = false; h.onPaintEnd(); return; }
+    if (painting) { endStroke(); return; }
     if (pts.size === 0 && moved <= TAP_SLOP && !rotating && e.type === 'pointerup') {
       const t = tileAt(e);
       if (t) h.onTap(t, p.type);

@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { B, DAYS_PER_YEAR } from './data.js';
 import { N, T, idx, inb } from './gen.js';
-import { terrAt } from './sim.js';
+import { terrAt, canPlace, tileBlocked } from './sim.js';
 import { getGeometry, modelKey, disposeModels } from './models.js';
 
 const HALF = N / 2;
@@ -68,6 +68,8 @@ export function createView(stage) {
   const waterMat = new THREE.MeshStandardMaterial({ color: 0x4fb0e0, roughness: 0.12, metalness: 0.15, transparent: true, opacity: 0.86 });
   const water = new THREE.InstancedMesh(topGeo, waterMat, N * N);
   water.receiveShadow = true;
+  // Map-wide instanced meshes never cull: their instance bounds change with every rebuild.
+  tops.frustumCulled = false; bodies.frustumCulled = false; water.frustumCulled = false;
   root.add(bodies, tops, water);
 
   const topY = (i) => s.m.height[i];
@@ -84,6 +86,7 @@ export function createView(stage) {
     }
     water.count = w;
     tops.instanceMatrix.needsUpdate = true; bodies.instanceMatrix.needsUpdate = true; bodies.instanceColor.needsUpdate = true; water.instanceMatrix.needsUpdate = true;
+    tops.computeBoundingSphere(); bodies.computeBoundingSphere(); water.computeBoundingSphere();
     paintTerrain();
   }
   function paintTerrain() {
@@ -109,7 +112,7 @@ export function createView(stage) {
   const pines = new THREE.InstancedMesh(pineGeo, plain, MAX_TREES);
   const rounds = new THREE.InstancedMesh(roundGeo, plain, MAX_TREES);
   const rocks = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.2, 0), plain, N * N * 2);
-  for (const im of [trunks, pines, rounds, rocks]) { im.castShadow = true; im.receiveShadow = true; root.add(im); }
+  for (const im of [trunks, pines, rounds, rocks]) { im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; root.add(im); }
   let treeList = [];           // { kind, tint } aligned with instances, for seasonal recolouring
   function buildTrees() {
     let nt = 0, np = 0, nr = 0, nk = 0;
@@ -152,7 +155,7 @@ export function createView(stage) {
     trunks.count = nt; pines.count = np; rounds.count = nr; rocks.count = nk;
     treeList = [pinesL, roundsL];
     for (let i = 0; i < nt; i++) trunks.setColorAt(i, _c.set(0x7a5a3c));
-    for (const im of [trunks, pines, rounds, rocks]) { im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
+    for (const im of [trunks, pines, rounds, rocks]) { im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.computeBoundingSphere(); }
     paintTrees();
   }
   function paintTrees() {
@@ -166,9 +169,10 @@ export function createView(stage) {
 
   // ----- paths, bridges, fields: one pool of tinted boxes -----
   const BITS = 9000;
+  const RW = 0.56, ARM = (1 - RW) / 2, ARM_O = RW / 2 + ARM / 2;     // path width, arm length, arm offset
   const bitGeo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
   const bits = new THREE.InstancedMesh(bitGeo, plain, BITS);
-  bits.receiveShadow = true; bits.castShadow = false;
+  bits.receiveShadow = true; bits.castShadow = false; bits.frustumCulled = false;
   root.add(bits);
   function bit(n, x, y, z, w, h, d, color) {
     if (n >= BITS) return n;
@@ -176,7 +180,7 @@ export function createView(stage) {
   }
   function buildBits() {
     let n = 0;
-    const rc = new THREE.Color(ROAD_COLORS[s.era]), rc2 = rc.clone().multiplyScalar(0.93);
+    const rc = new THREE.Color(ROAD_COLORS[s.era]);
     const wood = new THREE.Color(0x9a7246), rail = new THREE.Color(0x6f4c2c);
     const soilOn = new THREE.Color(0x8d6b46), soilOff = new THREE.Color(0xa59a84);
     const f = phase * 4, se = Math.floor(f) % 4, t = f - Math.floor(f);
@@ -192,18 +196,29 @@ export function createView(stage) {
       if (s.road[i]) {
         const e = road(x + 1, y), w = road(x - 1, y), so = road(x, y + 1), no = road(x, y - 1);
         if (s.m.terr[i] === T.WATER) {
+          if ((e || w) && (so || no)) {
+            // A turn, T or crossing on the water: one square deck over the joins, rails only on the open sides.
+            n = bit(n, X, 0.0, Z, 1.04, 0.05, 1.04, wood);
+            if (!e) n = bit(n, X + 0.48, 0.05, Z, 0.04, 0.1, 1.04, rail);
+            if (!w) n = bit(n, X - 0.48, 0.05, Z, 0.04, 0.1, 1.04, rail);
+            if (!so) n = bit(n, X, 0.05, Z + 0.48, 1.04, 0.1, 0.04, rail);
+            if (!no) n = bit(n, X, 0.05, Z - 0.48, 1.04, 0.1, 0.04, rail);
+            for (const ox of [-0.45, 0.45]) for (const oz of [-0.45, 0.45]) n = bit(n, X + ox, -0.3, Z + oz, 0.1, 0.3, 0.1, rail);
+            continue;
+          }
           const alongX = e || w || !(so || no);
           n = bit(n, X, 0.0, Z, alongX ? 1.04 : 0.56, 0.05, alongX ? 0.56 : 1.04, wood);
           for (const o of [-0.27, 0.27]) n = bit(n, X + (alongX ? 0 : o), 0.05, Z + (alongX ? o : 0), alongX ? 1.04 : 0.04, 0.1, alongX ? 0.04 : 1.04, rail);
           for (const o of [-0.45, 0.45]) n = bit(n, X + (alongX ? o : 0), -0.3, Z + (alongX ? 0 : o), 0.1, 0.3, 0.1, rail);
           continue;
         }
-        const c = (x + y) % 2 ? rc : rc2;
-        n = bit(n, X, 0.0, Z, 0.58, 0.035, 0.58, c);
-        if (e) n = bit(n, X + 0.395, 0, Z, 0.21, 0.035, 0.52, c);
-        if (w) n = bit(n, X - 0.395, 0, Z, 0.21, 0.035, 0.52, c);
-        if (so) n = bit(n, X, 0, Z + 0.395, 0.52, 0.035, 0.21, c);
-        if (no) n = bit(n, X, 0, Z - 0.395, 0.52, 0.035, 0.21, c);
+        // A solid band: a centre square plus full-width arms to each linked edge, so neighbours join seamlessly.
+        const c = _c.copy(rc).multiplyScalar(0.98 + hash(i, 8) * 0.04);
+        n = bit(n, X, 0.0, Z, RW, 0.035, RW, c);
+        if (e) n = bit(n, X + ARM_O, 0, Z, ARM, 0.035, RW, c);
+        if (w) n = bit(n, X - ARM_O, 0, Z, ARM, 0.035, RW, c);
+        if (so) n = bit(n, X, 0, Z + ARM_O, RW, 0.035, ARM, c);
+        if (no) n = bit(n, X, 0, Z - ARM_O, RW, 0.035, ARM, c);
       } else if (s.field[i]) {
         const on = s.d.fieldOn[i];
         const soil = _c.copy(on ? soilOn : soilOff).multiplyScalar(0.94 + hash(i, 9) * 0.12);
@@ -219,6 +234,7 @@ export function createView(stage) {
       }
     }
     bits.count = n;
+    bits.computeBoundingSphere();
     bits.instanceMatrix.needsUpdate = true;
     if (bits.instanceColor) bits.instanceColor.needsUpdate = true;
   }
@@ -227,19 +243,22 @@ export function createView(stage) {
   const meshes = new Map();     // id -> { mesh, key, pop }
   const bGroup = new THREE.Group();
   root.add(bGroup);
-  function facing(b, def) {
+  // Which way a building at (x, y) faces: toward a path (or the water), else a stable pick from its id.
+  // Used for real buildings and for the placement preview (id = s.nextId), so both agree.
+  function facingAt(x, y, def, id) {
     if (def.wonder) return 0;
     const sz = def.size;
     const sides = [[0, sz, 0], [sz, 0, Math.PI / 2], [0, -1, Math.PI], [-1, 0, -Math.PI / 2]];   // south, east, north, west
     const test = def.adj === 'water' ? (i) => s.m.terr[i] === T.WATER : (i) => s.road[i];
     for (const [dx, dy, rot] of sides) {
       for (let k = 0; k < sz; k++) {
-        const xx = b.x + (dx === 0 ? k : dx), yy = b.y + (dy === 0 ? k : dy);
+        const xx = x + (dx === 0 ? k : dx), yy = y + (dy === 0 ? k : dy);
         if (inb(xx, yy) && test(idx(xx, yy))) return rot;
       }
     }
-    return (b.id % 4) * (Math.PI / 2) * (sz === 1 && !def.adj ? 1 : 0);
+    return (id % 4) * (Math.PI / 2) * (sz === 1 && !def.adj ? 1 : 0);
   }
+  const facing = (b, def) => facingAt(b.x, b.y, def, b.id);
   function place(mesh, b, def, scale = 1) {
     const sz = def.size;
     _m.compose(_p.set(b.x + sz / 2 - HALF, 0, b.y + sz / 2 - HALF), _q.setFromAxisAngle(UP, mesh.userData.rot), _s.set(scale, scale, scale));
@@ -415,32 +434,114 @@ export function createView(stage) {
     overlay.instanceMatrix.needsUpdate = true; if (overlay.instanceColor) overlay.instanceColor.needsUpdate = true;
   }
 
-  const ghostMat = new THREE.MeshBasicMaterial({ color: 0x5fd08a, transparent: true, opacity: 0.6, depthWrite: false });
+  // ----- placement preview: tinted ghost, per-tile quads, outline, path hints, where-it-fits markers -----
+  // ok / warn (tiles fine, a rule or the cost says no) / bad (a tile is blocked); clear tool: clear (something to take up) / none.
+  const COL = { ok: 0x3ff58e, warn: 0xf2b33d, bad: 0xf0605a, clear: 0xff8a3d, none: 0xe6e6e0 };
+  const TINT = { ok: [0xffffff, 0x2a5a3a], warn: [0xffdc8f, 0x5c3d0a], bad: [0xffa098, 0x5c1712] };   // ghost colour, emissive
+  const GHOST_A = { ok: 0.9, warn: 0.5, bad: 0.5 };
+  const ghostMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9, metalness: 0, transparent: true, opacity: 0.8 });
   const ghost = new THREE.Mesh(new THREE.BufferGeometry(), ghostMat);
   ghost.visible = false; ghost.renderOrder = 3;
-  const flatGeo = new THREE.BoxGeometry(0.9, 0.06, 0.9).translate(0, 0.03, 0);
-  const frame = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.7, 4, 1).rotateX(-Math.PI / 2).rotateY(Math.PI / 4), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthTest: false }));
-  frame.visible = false; frame.renderOrder = 4;
-  root.add(ghost, frame);
-  function setGhost(type, x, y, ok) {
-    if (!type) { ghost.visible = false; frame.visible = false; return; }
-    const def = B[type], sz = def.size;
-    ghost.geometry = def.tile ? flatGeo : getGeometry(def.wonder ? type : type === 'home' ? 'home:0:0' : type);
-    ghost.position.set(x + sz / 2 - HALF, def.tile && s.m.terr[idx(Math.max(0, Math.min(N - 1, x)), Math.max(0, Math.min(N - 1, y)))] === T.WATER ? 0 : 0.02, y + sz / 2 - HALF);
-    ghostMat.color.set(ok ? 0x4fd98a : 0xf0605a);
-    ghost.visible = true;
-    frame.position.set(ghost.position.x, 0.06, ghost.position.z); frame.scale.setScalar(sz); frame.material.color.set(ok ? 0xffffff : 0xffb0a8); frame.visible = true;
+  const flatTile = (w) => new THREE.PlaneGeometry(w, w).rotateX(-Math.PI / 2);
+  // Per-tile squares draw over the ghost (depthTest off) so a blocked tile shows even under the model.
+  const quadMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.42, depthWrite: false, depthTest: false });
+  const quads = new THREE.InstancedMesh(flatTile(0.9), quadMat, 9);
+  quads.count = 0; quads.renderOrder = 4; quads.frustumCulled = false;
+  const hintMat = new THREE.MeshBasicMaterial({ color: 0xd9f4ff, transparent: true, opacity: 0.6, depthWrite: false });
+  const hints = new THREE.InstancedMesh(flatTile(0.74), hintMat, 12);
+  hints.count = 0; hints.renderOrder = 2.5; hints.frustumCulled = false;
+  // Outlines: a flat square band just inside the footprint edge, drawn on top. The ghost and the selection each have one.
+  const ringGeos = new Map();
+  function ringGeo(sz) {
+    let geo = ringGeos.get(sz);
+    if (geo) return geo;
+    const o = sz / 2 - 0.015, w = 0.075, P = [], I = [];
+    const quad = (x0, z0, x1, z1) => { const b = P.length / 3; P.push(x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1); I.push(b, b + 2, b + 1, b, b + 3, b + 2); };
+    quad(-o, -o, o, -o + w); quad(-o, o - w, o, o); quad(-o, -o + w, -o + w, o - w); quad(o - w, -o + w, o, o - w);
+    geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.setIndex(I);
+    ringGeos.set(sz, geo);
+    return geo;
   }
-  let selected = null;
+  const mkOutline = (color) => {
+    const m = new THREE.Mesh(ringGeo(1), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
+    m.visible = false; m.renderOrder = 5; return m;
+  };
+  const outline = mkOutline(COL.ok), selOutline = mkOutline(0xffd66b);
+  // Markers on every origin where the chosen building fits: a white dot on a dark rim, unlike the flat coverage tint.
+  const markMat = new THREE.MeshBasicMaterial({ color: 0xf6fff0, transparent: true, opacity: 0.95, depthWrite: false });
+  const rimMat = new THREE.MeshBasicMaterial({ color: 0x2c6e34, transparent: true, opacity: 0.8, depthWrite: false });
+  const marks = new THREE.InstancedMesh(new THREE.CircleGeometry(0.055, 16).rotateX(-Math.PI / 2).translate(0, 0.004, 0), markMat, N * N);
+  const rims = new THREE.InstancedMesh(new THREE.CircleGeometry(0.088, 16).rotateX(-Math.PI / 2), rimMat, N * N);
+  for (const im of [marks, rims]) { im.count = 0; im.frustumCulled = false; }
+  marks.renderOrder = 2.45; rims.renderOrder = 2.4;
+  root.add(ghost, quads, hints, outline, selOutline, rims, marks);
+
+  const topAt = (x, y) => (inb(x, y) ? Math.max(0, s.m.height[idx(x, y)]) : 0);
+  let outlineA = 0.9;
+  function hideGhost() { ghost.visible = false; outline.visible = false; quads.count = 0; hints.count = 0; }
+  // Preview `type` at origin (x, y). Paint tools (path, field, clear) get one tile and no model.
+  // Returns 'ok', 'warn' (tiles fine, a rule or the cost says no) or 'bad' (a tile is blocked).
+  function setGhost(type, x, y) {
+    if (!type) { hideGhost(); return null; }
+    const def = B[type], tool = type === 'clear' || def.tile, sz = tool ? 1 : def.size;
+    let state, n = 0, top = 0;
+    if (type === 'clear') { const i = inb(x, y) ? idx(x, y) : -1; state = i >= 0 && (s.road[i] || s.field[i]) ? 'clear' : 'none'; }
+    else if (tool) state = canPlace(s, type, x, y).ok ? 'ok' : 'bad';
+    else {
+      let blocked = false;
+      for (let dy = 0; dy < sz && !blocked; dy++) for (let dx = 0; dx < sz; dx++) if (tileBlocked(s, type, x + dx, y + dy)) { blocked = true; break; }
+      state = blocked ? 'bad' : canPlace(s, type, x, y).ok ? 'ok' : 'warn';
+    }
+    for (let dy = 0; dy < sz; dy++) for (let dx = 0; dx < sz; dx++) {
+      const xx = x + dx, yy = y + dy, h = topAt(xx, yy);
+      top = Math.max(top, h);
+      const col = tool ? COL[state] : tileBlocked(s, type, xx, yy) ? COL.bad : COL[state === 'warn' ? 'warn' : 'ok'];
+      _m.makeTranslation(wx(xx), h + 0.06, wx(yy)); quads.setMatrixAt(n, _m); quads.setColorAt(n++, _c.set(col));
+    }
+    quads.count = n; quads.instanceMatrix.needsUpdate = true; quads.instanceColor.needsUpdate = true;
+    // When it all fits, the squares sit under the model so it reads in its own colours; otherwise they draw on top.
+    const fine = state === 'ok' && !tool;
+    quadMat.opacity = state === 'none' ? 0.2 : fine ? 0.3 : 0.42; quadMat.depthTest = fine; outlineA = state === 'none' ? 0.35 : 0.9;
+    const cx = x + sz / 2 - HALF, cz = y + sz / 2 - HALF;
+    outline.geometry = ringGeo(sz); outline.position.set(cx, top + 0.07, cz); outline.material.color.set(COL[state]); outline.visible = true;
+    n = 0;
+    if (!tool) {
+      ghost.geometry = getGeometry(def.wonder ? type : modelKey({ type, x, y, id: s.nextId, lvl: 0, stage: 0 }));
+      ghost.position.set(cx, 0.01, cz); ghost.rotation.set(0, facingAt(x, y, def, s.nextId), 0);
+      ghostMat.color.set(TINT[state][0]); ghostMat.emissive.set(TINT[state][1]); ghostMat.opacity = GHOST_A[state];
+      ghost.visible = true;
+      // Paths touching the footprint's sides: these give "Beside a path".
+      for (let k = 0; k < sz; k++) for (const [xx, yy] of [[x + k, y - 1], [x + k, y + sz], [x - 1, y + k], [x + sz, y + k]]) {
+        if (!inb(xx, yy) || !s.road[idx(xx, yy)]) continue;
+        _m.makeTranslation(wx(xx), 0.05, wx(yy)); hints.setMatrixAt(n++, _m);
+      }
+    } else ghost.visible = false;
+    hints.count = n; hints.instanceMatrix.needsUpdate = true;
+    return state;
+  }
+  // Recompute the where-it-fits markers (ignores cost: the info strip explains that). Not per hover.
+  // Only worth showing when the spots are scarce: types with a placement rule, or under ~30% of open land.
+  function setFits(type) {
+    let n = 0;
+    const def = type && B[type];
+    if (def && !def.tile) {
+      const sz = def.size, o = sz / 2 - HALF;
+      for (let y = 0; y + sz <= N; y++) for (let x = 0; x + sz <= N; x++) {
+        if (!canPlace(s, type, x, y, { free: true }).ok) continue;
+        _m.makeTranslation(x + o, 0.055, y + o); marks.setMatrixAt(n, _m); rims.setMatrixAt(n++, _m);
+      }
+      if (!def.adj && !def.near) {
+        let open = 0;
+        for (let i = 0; i < N * N; i++) if (s.m.terr[i] !== T.HILL && s.m.terr[i] !== T.WATER && !s.d.occ[i] && !s.road[i] && !s.field[i]) open++;
+        if (n >= open * 0.3) n = 0;
+      }
+    }
+    marks.count = rims.count = n; marks.instanceMatrix.needsUpdate = true; rims.instanceMatrix.needsUpdate = true;
+  }
   function setSelection(b) {
-    selected = b;
-    if (!b) { if (!ghost.visible) frame.visible = false; return; }
+    if (!b) { selOutline.visible = false; return; }
     const sz = B[b.type].size;
-    frame.position.set(b.x + sz / 2 - HALF, 0.06, b.y + sz / 2 - HALF); frame.scale.setScalar(sz); frame.material.color.set(0xffe08a); frame.visible = true;
-  }
-  function setTileFrame(x, y) {
-    if (x === null) { if (!ghost.visible && !selected) frame.visible = false; return; }
-    frame.position.set(wx(x), 0.06, wx(y)); frame.scale.setScalar(1); frame.material.color.set(0xffffff); frame.visible = true;
+    selOutline.geometry = ringGeo(sz); selOutline.position.set(b.x + sz / 2 - HALF, 0.07, b.y + sz / 2 - HALF); selOutline.visible = true;
   }
 
   // ----- camera -----
@@ -460,19 +561,75 @@ export function createView(stage) {
       clampCam(); cam.tx = cam.gx; cam.tz = cam.gz;
     },
     zoom(f) { cam.gd *= f; clampCam(); },
-    rotate(a, smooth = false) { cam.gyaw += a; if (!smooth) cam.yaw = cam.gyaw; },
+    // Direct turns move the view and its target together, so an ease in progress carries on without a jump.
+    rotate(a, smooth = false) { cam.gyaw += a; if (!smooth) cam.yaw += a; },
+    // Ease to the nearest standard diagonal view (PI/4 + k*PI/2), the short way round.
+    snapYaw() { const q = Math.PI / 2; cam.gyaw = Math.PI / 4 + Math.round((cam.yaw - Math.PI / 4) / q) * q; },
     focus(x, y, dist) { cam.gx = x - HALF + 0.5; cam.gz = y - HALF + 0.5; if (dist) cam.gd = dist; clampCam(); },
     jump(x, y, dist) { controls.focus(x, y, dist); cam.tx = cam.gx; cam.tz = cam.gz; cam.dist = cam.gd; applyCamera(); },
     get dist() { return cam.gd; },
   };
+  // Picking: buildings, then the terrain columns (walked cell by cell along the ray, so hills and the brook bed
+  // are hit where they are drawn), then the y=0 plane. Returns the tile and the continuous hit point (fx, fy) in tile units.
   const ray = new THREE.Raycaster(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3(), ndc = new THREE.Vector2();
+  const hits = [];
+  const colTop = (i) => (s.m.terr[i] === T.WATER ? -0.06 : s.m.height[i]);
+  const YMAX = 1.3, YMIN = -0.3;
+  // Distance along the ray to the first terrain column it meets, or -1. Sets pickCX/pickCY to that column.
+  let pickCX = 0, pickCY = 0;
+  function rayTerrain(o, d) {
+    const ox = o.x + HALF, oz = o.z + HALF;
+    let t0 = 0, t1 = Infinity, a, b;
+    // Clip the ray to the map's box: x and z in [0, N] (tile units), y in [YMIN, YMAX].
+    if (Math.abs(d.x) < 1e-9) { if (ox < 0 || ox > N) return -1; }
+    else { a = -ox / d.x; b = (N - ox) / d.x; t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b)); }
+    if (Math.abs(d.y) < 1e-9) { if (o.y < YMIN || o.y > YMAX) return -1; }
+    else { a = (YMIN - o.y) / d.y; b = (YMAX - o.y) / d.y; t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b)); }
+    if (Math.abs(d.z) < 1e-9) { if (oz < 0 || oz > N) return -1; }
+    else { a = -oz / d.z; b = (N - oz) / d.z; t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b)); }
+    if (t0 > t1) return -1;
+    let cx = Math.min(N - 1, Math.max(0, Math.floor(ox + d.x * t0))), cz = Math.min(N - 1, Math.max(0, Math.floor(oz + d.z * t0)));
+    const sx = d.x > 0 ? 1 : -1, sz = d.z > 0 ? 1 : -1;
+    const dtx = Math.abs(1 / d.x), dtz = Math.abs(1 / d.z);
+    let tmx = Math.abs(d.x) < 1e-9 ? Infinity : ((sx > 0 ? cx + 1 : cx) - ox) / d.x;
+    let tmz = Math.abs(d.z) < 1e-9 ? Infinity : ((sz > 0 ? cz + 1 : cz) - oz) / d.z;
+    let tIn = t0;
+    while (tIn <= t1) {
+      const tOut = Math.min(tmx, tmz, t1), h = colTop(idx(cx, cz));
+      if (o.y + d.y * tIn <= h) { pickCX = cx; pickCY = cz; return tIn; }            // the column's side
+      if (o.y + d.y * tOut <= h) { pickCX = cx; pickCY = cz; return (h - o.y) / d.y; } // its top
+      if (tmx < tmz) { cx += sx; tIn = tmx; tmx += dtx; } else { cz += sz; tIn = tmz; tmz += dtz; }
+      if (cx < 0 || cz < 0 || cx >= N || cz >= N) break;
+    }
+    return -1;
+  }
+  const clampIn = (v, lo, hi) => Math.min(hi - 0.001, Math.max(lo + 0.001, v));
   function pickTile(clientX, clientY) {
+    if (!s) return null;
     const r = stage.canvas.getBoundingClientRect();
     ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
+    const o = ray.ray.origin, d = ray.ray.direction;
+    const tt = rayTerrain(o, d);
+    hits.length = 0;
+    ray.intersectObjects(bGroup.children, false, hits);
+    const bh = hits.length ? hits[0] : null;
+    const b = bh && s.d.byId.get(bh.object.userData.id);
+    if (b && (tt < 0 || bh.distance < tt)) {
+      // A building: the ground point under the pointer, clamped to the footprint. Using the ground (not the roof hit)
+      // keeps the origin the same as just before the building went up, so a fresh build doesn't re-show the ghost.
+      const sz = B[b.type].size;
+      const gp = ray.ray.intersectPlane(ground, hit) ? hit : bh.point;
+      const fx = clampIn(gp.x + HALF, b.x, b.x + sz), fy = clampIn(gp.z + HALF, b.y, b.y + sz);
+      return { x: Math.floor(fx), y: Math.floor(fy), fx, fy };
+    }
+    if (tt >= 0) {
+      const x = pickCX, y = pickCY;
+      return { x, y, fx: clampIn(o.x + d.x * tt + HALF, x, x + 1), fy: clampIn(o.z + d.z * tt + HALF, y, y + 1) };
+    }
     if (!ray.ray.intersectPlane(ground, hit)) return null;
-    const x = Math.floor(hit.x + HALF), y = Math.floor(hit.z + HALF);
-    return inb(x, y) ? { x, y } : null;
+    const fx = hit.x + HALF, fy = hit.z + HALF, x = Math.floor(fx), y = Math.floor(fy);
+    return inb(x, y) ? { x, y, fx, fy } : null;
   }
   function project(x, y, h = 0.5) {
     _p.set(x - HALF + 0.5, h, y - HALF + 0.5).project(camera);
@@ -504,22 +661,19 @@ export function createView(stage) {
     }
     emitSmoke(dt); updatePuffs(dt); updateFolk(dt, elapsed);
     for (const c of clouds) { c.position.x += c.userData.v * dt; if (c.position.x > HALF + 8) { c.position.x = -HALF - 8; c.position.z = -HALF + Math.random() * N; } }
-    if (frame.visible) { const pu = 1 + Math.sin(elapsed * 5) * 0.03; frame.scale.setScalar((ghost.visible ? B[ghostType()].size : selected ? B[selected.type].size : 1) * pu); }
+    if (outline.visible) outline.material.opacity = outlineA * (0.9 + Math.sin(elapsed * 5) * 0.1);
     for (let i = 0; i < pins.count; i++) {
       const b = pinList[i];
       _m.makeTranslation(wx(b.x), 1.0 + Math.sin(elapsed * 4 + i) * 0.06 + (b.lvl >= 5 ? 0.35 : 0), wx(b.y)); pins.setMatrixAt(i, _m);
     }
     if (pins.count) pins.instanceMatrix.needsUpdate = true;
   }
-  let _ghostType = 'home';
-  const ghostType = () => _ghostType;
-
   return {
-    controls, pickTile, project, setOverlay, setSelection, setTileFrame,
-    setGhost(type, x, y, ok) { if (type) _ghostType = type; setGhost(type, x, y, ok); },
+    controls, pickTile, project, setOverlay, setSelection, setGhost, setFits,
     setState(state) {
       s = state; phase = ((s.day % DAYS_PER_YEAR) / DAYS_PER_YEAR);
       for (const e of meshes.values()) bGroup.remove(e.mesh); meshes.clear(); pops.length = 0; folk.length = 0;
+      hideGhost(); setSelection(null); setFits(null);
       buildTerrain(); buildTrees(); buildBits(); syncBuildings(false); lastPaint = -1;
       controls.jump(s.m.start.x, s.m.start.y, 17);
     },
@@ -532,6 +686,16 @@ export function createView(stage) {
       for (let i = 0; i < 36; i++) { const a = Math.random() * 6.28, r = 0.6 + Math.random() * 1.4; puff(cx, 0.6 + Math.random(), cz, { vx: Math.cos(a) * r, vz: Math.sin(a) * r, vy: 1.2 + Math.random() * 1.4, life: 1.2 + Math.random() * 0.8, size: 0.7, color: cols[i % 5] }); }
     },
     update, material: mat,
-    dispose() { disposeModels(); mat.dispose(); plain.dispose(); },
+    ...(import.meta.env.DEV ? { _dbg: { THREE, renderer, scene, camera, root, bits, tops, bodies, ghost, overlay, quads, outline, selOutline, hints, marks, rims, cam } } : {}),
+    dispose() {
+      disposeModels(); mat.dispose(); plain.dispose();
+      for (const im of [tops, bodies, water, trunks, pines, rounds, rocks, bits, puffs, folkB, folkH, overlay, pins]) im.dispose();
+      for (const geo of [topGeo, bodyGeo, trunkGeo, pineGeo, roundGeo, rocks.geometry, bitGeo, puffs.geometry, bodyG, headG, overlay.geometry, pinGeo]) geo.dispose();
+      for (const c of clouds) c.geometry.dispose();
+      for (const m of [waterMat, puffMat, cloudMat, overlayMat, pins.material]) m.dispose();
+      for (const geo of ringGeos.values()) geo.dispose();
+      for (const im of [quads, hints, marks, rims]) { im.geometry.dispose(); im.dispose(); }
+      for (const m of [ghostMat, quadMat, hintMat, markMat, rimMat, outline.material, selOutline.material]) m.dispose();
+    },
   };
 }

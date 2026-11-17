@@ -203,7 +203,11 @@ export function createUI(stage, g) {
     let name = id === 'clear' ? 'Clear paths and fields' : d.name, text = '', cls = '';
     const acts = [];
     if (g.mode === 'paint') {
-      text = id === 'clear' ? 'Drag over paths or fields to take them up.' : `${d.desc} Drag to draw; two fingers move the map.`;
+      if (id === 'clear') text = 'Drag over paths or fields to take them up.';
+      else if (id === 'field') {
+        text = s.d.n.farmstead ? 'Fields in the tinted area are tended by a farmstead.' : 'No farmstead yet: fields need one within two tiles to be tended.';
+        text += ' Drag to draw; two fingers move the map.';
+      } else text = `${d.desc} Drag to draw; two fingers move the map.`;
     } else if (!g.ghost) text = `${d.desc} Tap the map to choose a spot.`;
     else {
       const chk = S.canPlace(s, id, g.ghost.x, g.ghost.y);

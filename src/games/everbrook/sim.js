@@ -225,16 +225,23 @@ export function costOf(s, type, x, y) {
   return B[type].cost;
 }
 
+// Why one footprint tile can't take this type (null when the tile itself is fine).
+export function tileBlocked(s, type, xx, yy) {
+  if (!inb(xx, yy)) return 'Off the map';
+  const i = idx(xx, yy), t = s.m.terr[i];
+  if (s.d.occ[i] || s.road[i] || s.field[i]) return 'Something is already here';
+  if (t === T.HILL) return 'Too rocky to build on';
+  if (t === T.WATER && type !== 'road') return 'Needs dry ground';
+  return null;
+}
+
 export function canPlace(s, type, x, y, { free = false } = {}) {
   const def = B[type];
   if (!unlocked(s, type)) return { ok: false, why: 'Not discovered yet' };
   if (def.wonder && s.d.n[type] > 0) return { ok: false, why: 'Already built' };
   for (const [xx, yy] of footprint(x, y, def.size)) {
-    if (!inb(xx, yy)) return { ok: false, why: 'Off the map' };
-    const i = idx(xx, yy), t = s.m.terr[i];
-    if (s.d.occ[i] || s.road[i] || s.field[i]) return { ok: false, why: 'Something is already here' };
-    if (t === T.HILL) return { ok: false, why: 'Too rocky to build on' };
-    if (t === T.WATER && type !== 'road') return { ok: false, why: 'Needs dry ground' };
+    const why = tileBlocked(s, type, xx, yy);
+    if (why) return { ok: false, why };
   }
   if (def.adj && !ringHas(s, x, y, def.size, TERRAIN_TEST[def.adj](s))) {
     return { ok: false, why: { water: 'Must touch the water', hill: 'Must touch a hill', ore: 'Must touch an ore outcrop', coal: 'Must touch a coal seam' }[def.adj] };
