@@ -1,78 +1,61 @@
 # Handoff
 
-## Date / Time
-2026-11-16 16:08 America/New_York
+## Date / Time / Model
+2026-11-16 19:05 EST · Opus 5.5
 
 ## Important links
-- `src/shell/CONTRACT.md` — module, offline, phone and disposal requirements.
-- `docs/new-games.md` — expansion behavior, validation and phone installation.
-- `docs/wishlist.md` — existing game limitations and deferred physical-device QA.
+- [src/shell/CONTRACT.md](src/shell/CONTRACT.md): rules every game follows: offline only, 44 pt targets, safe areas, dispose everything, seeded generation.
+- [docs/plans/ui-polish.md](docs/plans/ui-polish.md): the UI and instructions standard, which the deferred Codex-games polish must meet.
+- [docs/new-games.md](docs/new-games.md): how Odd Crown, Pocket Planets and Reef Relay work, plus phone install steps.
+- [docs/wishlist.md](docs/wishlist.md): deferred items per game, including what the polish pass deliberately left.
+- [docs/history.md](docs/history.md): an append-only session log with lasting decisions and gotchas. Read it for the testing setup.
 
 ## Plan / Spec
-The requested expansion is implemented: three more three.js games, including
-randomized unknown-rules chess, polished mobile UI, and offline saves/assets.
-The user authorized a local commit of this session's changes. No push or deployment
-is authorized.
+There is no multi-session plan. The UI polish pass (`docs/plans/ui-polish.md`) is finished for the three original games. Its one open item, polishing Codex's three games, is next step 1.
 
 ## Branch / Worktree
-`codex/pocket-games-expansion` — `/Users/irispepa/.codex/worktrees/8ebe/flight-games`.
-Branched from `f18e3a8` to preserve this session independently.
-The original checkout is `/Users/irispepa/Projects/flight-games` on `main`.
-Its untracked HANDOFF.md supplied the starting context; it was not modified.
-This worktree originally had no handoff. Keep work in this checkout.
+- `main` at `/Users/irispepa/Projects/flight-games` is at `fe93425`: the polish pass plus Codex's games. There is no remote.
+- This handoff and `docs/history.md` were written on `claude/flight-games-ui-polish-a614ec` (`/Users/irispepa/Projects/flight-games/.claude/worktrees/flight-games-ui-polish-a614ec`), which is at the same commit as `main`. They are uncommitted; commit them, then fast-forward `main`.
+- **Open branches:**
+  - `codex/pocket-games-expansion` (`/Users/irispepa/.codex/worktrees/8ebe/flight-games`) is merged and can be removed.
+  - `claude/niko-game-collection-2eb773` (`.claude/worktrees/niko-game-collection-2eb773`) is unfinished WIP and not merged (see Known limitations).
+- In the main checkout, `docs/handoff-2026-11-16-fable.md` is the untracked first-build handoff, moved aside so the merge could run. Its lasting content is now in `docs/history.md`, so it can be deleted.
 
 ## Status
-Six games are implemented, including the expansion and illustrated launcher.
-Production build and all six simulation suites pass. Phone-sized browser checks
-and production offline launches pass. Still not hosted or tested on real iPhone.
+Six games are on `main`. Tidewater, Deepvault and Bastion Maze have the polished UI and illustrated How to play guides. `npm test` (all six suites) and `npm run build` pass. Nothing is hosted yet, and nothing has been tried on a real iPhone.
 
 ## How to run it
-- `npm ci`
-- `npm run dev -- --host 127.0.0.1 --port 5310 --strictPort`
-- `npm test` — new simulations plus existing suites; tower defence uses `--quick`.
-- `npm run build` — emits `dist/`, including all PWA assets.
-- `npm run preview -- --host 127.0.0.1 --port 5311 --strictPort`
-- `NO_HMR=1 npm run dev -- --host 127.0.0.1 --port 5312 --strictPort` for stable QA.
+- `npm install`
+- `npm run dev -- --port 5310 --strictPort`: dev server.
+- `NO_HMR=1 npm run dev -- --port 5312 --strictPort`: a stable server for scripted checks. Restart it after edits, because it serves cached transforms.
+- `npm test`: all six sim suites (Bastion runs with `--quick`).
+- `npm run build`, then `npm run preview -- --port 5311 --strictPort`: the production build with the service worker, for offline checks.
+- `node scripts/make-icons.mjs`: regenerates `public/icon-*.png`.
+- **Visual checks:** the in-app Browser pane throttles when hidden. Use a private headless Chrome driven over CDP, as described in `docs/history.md` (session 2).
+- **Dev handles:** `window.__dv` (Deepvault) and `window.__bm` (Bastion Maze), dev builds only.
 
 ## Next steps
-1. Review/play the new games, especially Odd Crown pacing and difficulty.
-2. Choose HTTPS hosting, then install on iPhone and test airplane-mode reopen.
-3. Check physical touch feel, safe areas and frame rate before the flight.
-4. Ask the user before any commit or push. No remote exists in the original setup.
+1. **Later: polish the How to play and instructions of Codex's three games** (`src/games/oddcrown/`, `src/games/planets/`, `src/games/reef/`) to the standard in `docs/plans/ui-polish.md`.
+   - **The standard:** paged guides, one topic per page, a picture drawn in code, 2–4 short points (about 20 words at most), page dots, Back/Next, Skip and swipe. Every fact is checked against the game's `sim.js`. Add first-run pointers only where they help.
+   - **Worked examples to copy from:**
+     - [src/games/builder/help.js](src/games/builder/help.js): Tidewater's pages and SVG pictures. The paging, swipe and first-run coach marks live in [src/games/builder/ui.js](src/games/builder/ui.js) (`helpGo`, `startCoach`).
+     - [src/games/roguelike/howto.js](src/games/roguelike/howto.js): Deepvault's pages. The controls diagram is drawn from the real HUD layout, and the button labels on the first floor are in `ui.js` (`setFirstRun`).
+     - `showHow` in [src/games/towerdefence/ui.js](src/games/towerdefence/ui.js): Bastion Maze's pages with mini-map SVGs, a tower table built from `data.js`, and the first-wave coach.
+   - Verify at 390×844 and 375×667, and run `npm test` and `npm run build`.
+2. Finish the Niko games branch in its own session. Then rebase it onto `main` and resolve the `src/main.js` and `vite.config.js` conflicts there; each new game should meet the same UI standard.
+3. Pick HTTPS hosting (GitHub Pages, Netlify or Cloudflare Pages; needs the owner's go-ahead), install on the iPhone, and check touch feel, safe areas, frame rate and reopening in airplane mode.
+4. Work through `docs/wishlist.md`: Deepvault enemy contrast (`render.js`), Bastion hero camera, Tidewater charter modal not yet seen on screen, balance from human play.
 
 ## Key decisions
-- Plain ES modules, Vite, three.js and vite-plugin-pwa; no new dependencies.
-- Existing games remain intact. New games follow the same lazy module contract.
-- `arcade.js/css` supplies shared new-game UI, dialogs, camera and board helpers.
-- Odd Crown: 6 × 6, six secret piece rules chosen from twelve movement patterns
-  and six capture powers. Unusual jumps, cannon captures, blasts, recruitment,
-  boomerangs, allied swaps, hidden trapdoor/spring/confetti tiles. New seed per court.
-- Free failed attempts and automatic discovery after two misses; Peek insight;
-  notebook; king danger warnings; three-round royal truce; undo retains discoveries.
-- Pocket Planets: swipe-driven 2048-style merge puzzle, 3D planet atlas, undo,
-  recyclable planets and persistent scores; no timer; keep playing after a Sun.
-- Reef Relay: generated solvable channel networks, three pearls, unlimited hints,
-  reverse rotations, undo and reef progression; no timer.
-- All art, models, labels and audio are local/procedural. No external asset requests.
-- Repeated tiles/stars use instancing. Stage disposal now frees instance resources.
-- Production caching includes all game chunks, including those not yet launched.
-
-## Validation
-- Odd Crown: 80 unique courts and full bot games, rule/power and safety checks.
-- Pocket Planets: 100 seeds, merges/spawning/recycle/undo/game-over checks.
-- Reef Relay: 500 seeds, solvability/connectivity/hint/undo checks.
-- Existing builder, roguelike and tower-defence suites passed.
-- Browser layouts: 375 × 667, 390 × 844, 430 × 932; controls ≥44 CSS pixels.
-- Browser interaction: chess raycast/AI/undo, planet swipe/merges, reef rotation/
-  hints/victory, saved continuation and game exits.
-- Production normal reload and all six launches worked with network blocked.
-  An uncached fetch failed during that check; navigator.onLine can still report
-  true under Chrome's network throttling, so it is not the test assertion.
+- **PWA, offline, no asset files:** all art, models and sounds are made in code. No fonts, images or network.
+- **Pure sims with bot tests:** keep the sim modules free of DOM and three.js, because `npm test` depends on it.
+- **UI standard per game:** each game keeps its own UI and CSS prefix (`tw-`, `dv-`, `bm-`, Codex's `arcade.*`). The shared standard is in `docs/plans/ui-polish.md`, not in shared components.
+- **First-run flags:** Tidewater `coachSeen`, Bastion `settings.seenCoach`, and Deepvault `meta.runs === 0` (no new key). Save formats are unchanged.
+- **Impeccable hook:** no one-sided accent borders and no `width` animations. Use full borders and `transform`.
+- Ask before committing or pushing.
 
 ## Known limitations / blockers
-- No HTTPS hosting address; localhost cannot install this PWA on a phone.
-- No physical iPhone testing. Safe-area rules exist but device behavior is unverified.
-- Odd Crown rules/balance have bot and short browser coverage, not extended human QA.
-- Legacy game balance/performance gaps remain in `docs/wishlist.md`.
-- The game-module contract's own-folder-only rule came from parallel initial game
-  development; this expansion explicitly required shell registration and shared UI.
+- No HTTPS host, so the app cannot be installed on a phone yet. It has never run on a real iPhone.
+- Swipe in the guides was tested with simulated pointer events only.
+- The Niko branch (`db82004`: Everbrook, Helpdesk, Lanternfall, about 9,400 lines) is an interrupted WIP and has not been reviewed.
+- Codex's three games have only short browser and bot coverage, with no long human play.
