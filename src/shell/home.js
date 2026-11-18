@@ -70,7 +70,10 @@ export function createInfo(home, game, { onClose, onPlay, onGuide }) {
   const title = el('h2', '', game.title);
   title.id = 'po-info-title';
   sheet.setAttribute('aria-labelledby', title.id);
-  const close = button('Close', 'po-close', onClose);
+  const close = button('', 'po-close', onClose);
+  close.setAttribute('aria-label', 'Close');
+  close.title = 'Close';
+  close.append(image('close.svg', ''));
   header.append(title, close);
   const actions = el('div', 'po-actions');
   const guideButton = button('How to play', 'po-action', onGuide);

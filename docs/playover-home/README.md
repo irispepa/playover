@@ -7,9 +7,9 @@ Authoritative design: [IMPLEMENTATION.md](IMPLEMENTATION.md) and [375×667 mocku
 - Fresh worktree: `/Users/irispepa/.codex/worktrees/playover-home-approved/flight-games`.
 - Branch: `codex/playover-home-approved`, based on clean main `acb2bdd`.
 - The rejected `codex/playover-home-design` checkout was not read, copied, merged or changed.
-- Tutorial source: owner-supplied stable commit `3235cf2`, directly based on `acb2bdd`. Its 35 code/document files (including deletions) were applied exactly; this worktree's `HANDOFF.md` was preserved and updated separately. This includes standardized guides and optional More tips for all nine games, Helpdesk's title guide entry and Bastion's data-driven tower reference. No active snapshot was copied and no new commit was created.
+- Tutorial source: owner-supplied stable commit `3235cf2`, directly based on `acb2bdd`. Its 35 code/document files (including deletions) were applied exactly; this worktree's `HANDOFF.md` was preserved and updated separately. This includes standardized guides and optional More tips for all nine games, Helpdesk's title guide entry and Bastion's data-driven tower reference. No active snapshot was copied; importing the tutorial patch did not create a separate commit.
 - PWA owner: clean `e918e1b` in `/Users/irispepa/Projects/flight-games/.claude/worktrees/playover-pwa-conversion-9dbb76`, separate from main. Home adapts its committed shell update/persistent-storage policy and prompt registration. Its deployment workflow and rendering changes are outside this patch. That commit does not modify the icons, so there is no existing icon-file conflict.
-- No commits, pushes or deployment were made.
+- Reviewed implementation was committed as `9d06cb4` at the owner's request. Nothing pushed or deployed. Subsequent information-sheet action centering and X-button polish were approved for commit and merge.
 
 ## Implementation
 
@@ -48,5 +48,5 @@ The tutorial commit and all nine Home adapters are integrated. Tidewater and Eve
 
 Simulation tests, build, all-nine Home/in-game guide checks and cold offline guide/game checks pass. Guide close/finish and More tips preserve the Home information-sheet origin and all saved state. See `design-qa.md` for evidence and the remaining physical-device limitation.
 
-1. Review the implementation and approve a commit if desired. Nothing is committed, pushed or deployed.
+1. The owner approved the follow-up sheet polish for commit and merge; ask before pushing. The reviewed implementation is already committed as `9d06cb4`; nothing pushed or deployed.
 2. Physical iPhone/installed-mode verification still requires the owner's device. Browser emulation does not establish device acceptance.

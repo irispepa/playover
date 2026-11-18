@@ -29,6 +29,7 @@ Visual fidelity and browser interaction acceptance pass. The owner-supplied stab
 2. Overlay inspection found native dialog max-width insetting the information sheet and shared guide CSS overriding Home's blue accent (P2). Set the sheet's explicit max-width and increased Home guide theme specificity. Recaptured `information-sheet.png` and `home-guide.png`; the sheet is now 375px wide and the guide action is #8cd3ed. Targeted browser checks pass.
 3. Post-fix visual comparison finds no remaining actionable visual P0/P1/P2 mismatch.
 4. The tutorial integration dependency was resolved with stable commit `3235cf2`. Full all-nine Home, in-game and offline guide checks now pass, including More tips and unchanged saved state. Fresh guide screenshots are included in the evidence folder. Home geometry is unchanged and the new production Home capture still matches the source comparison.
+5. After committing the reviewed implementation as `9d06cb4`, the owner requested centered information-sheet actions and asked about dismissal conventions. Follow-up centers Play/How to play and uses the existing game-sheet X shape in a 44×44 target with an accessible Close label. The title and prose remain left aligned. Updated sheet capture: `docs/playover-home/evidence/information-sheet.png`. The owner approved the follow-up for commit and merge.
 
 ## Findings
 
@@ -37,7 +38,7 @@ Visual fidelity and browser interaction acceptance pass. The owner-supplied stab
 ## Verification
 
 - `npm test`: all nine simulation suites pass.
-- `npm run build`: passes; integrated build precaches 59 entries, approximately 2.44 MiB, including all game/guide chunks and branding.
+- `npm run build`: passes; current build precaches 60 entries, approximately 2.44 MiB, including all game/guide chunks, branding and the sheet X icon.
 - Normal production browser flow: all nine artwork and sheet Play paths pass; registry descriptions, Back/focus restoration, deep-link exit, responsive dimensions, safe-area padding and 200% text pass.
 - All nine Home guides: close/finish returns to the same information sheet, keyboard and simulated horizontal swipes pass, reduced motion passes, and all storage remains unchanged. More tips opens from the last card, returns to the main guide and closes back to the information sheet without save/first-run writes.
 - All nine in-game guide entries: shared guide and More tips open and return to the same game. Includes Helpdesk's new title-screen entry. No console or runtime errors.
@@ -47,10 +48,11 @@ Visual fidelity and browser interaction acceptance pass. The owner-supplied stab
 - Installed SW update waits while a game is open; returning Home applies it with exactly one reload, using a disposable production copy.
 - Normal-flow console errors, uncaught errors and external requests: none. Deliberate failure-test network/console errors are expected and isolated.
 - Targeted final checks: full-width sheet, guide accent, short-viewport scroll restoration, browser Forward and package version pass.
+- Post-commit sheet polish: centered action geometry and 44×44 accessible X pass at all five viewport sizes. Close/focus restoration, guide return, Escape and the cached X asset offline pass; no console/runtime errors.
 
 ## Remaining acceptance
 
 1. Review on a physical iPhone before claiming installed-mode/device acceptance. Browser emulation and synthetic swipes do not establish that.
-2. Ask before committing or pushing. No commit, push or deployment has occurred.
+2. Reviewed implementation committed as `9d06cb4`. The owner approved committing the sheet polish and merging into main; ask before pushing. Nothing pushed or deployed.
 
 final result: passed

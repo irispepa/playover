@@ -28,8 +28,9 @@
 .po-sheet-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .po-sheet h2 { font-size:24px; line-height:1.2; margin:0; }
 .po-sheet p { font-size:15px; line-height:1.6; color:#b6c3d0; margin:12px 0 22px; }
-.po-close { min-width:44px; min-height:44px; color:#b6c3d0; }
-.po-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.po-close { display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; color:#b6c3d0; }
+.po-close img { width:18px; height:18px; }
+.po-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
 .po-action { min-height:48px; min-width:88px; padding:12px 18px; background:#263c50; border-radius:10px; font-size:15px; }
 .po-primary { background:#8cd3ed; color:#101e2b; font-weight:650; }
 .fg-guide.po-guide { --g-bg:#101e2b; --g-panel:#203448; --g-ink:#f0f2f4; --g-muted:#b6c3d0; --g-accent:#8cd3ed; --g-line:#354b60; }
