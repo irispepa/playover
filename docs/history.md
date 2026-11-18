@@ -34,3 +34,8 @@ An append-only log of sessions and the decisions with lasting value. Not auto-lo
 - **Merge:** Codex's branch was merged into the polish branch. The only conflict was in `docs/wishlist.md`, where both sides had appended lines. `main` was then fast-forwarded.
 - **Testing lesson:** the in-app Browser pane throttles to about 2 fps when hidden and serves stale screenshots. The chrome-devtools MCP can be locked by another session's browser profile. What worked was a private headless Chrome (`--headless=new --remote-debugging-port=<port> --user-data-dir=<own dir> --use-angle=swiftshader --enable-unsafe-swiftshader`) driven by a small Node CDP script (global `WebSocket`, Node 24). It emulates 390×844 @2x and renders WebGL. Use `NO_HMR=1` dev servers so parallel edits don't reload the page.
 - The Niko games branch (`claude/niko-game-collection-2eb773`, WIP `db82004`: Everbrook, Helpdesk, Lanternfall) was left unmerged because it is unfinished. It conflicts with `main` in `src/main.js` and `vite.config.js`.
+
+## 2026-11-16 · Niko games merged · Fable 5.2 (`e69fce9`)
+- Everbrook (`everbrook`, city builder), Lanternfall (`lanternfall`, mystery visual novel) and Patch & Kettle (`helpdesk`, cozy IT) were finished on `claude/niko-game-collection-2eb773` and merged into `main`. Nine games now ship in the illustrated launcher.
+- `npm test` now runs all nine sim suites. Everbrook takes about 18 s.
+- Dev vs preview: `npm run preview` serves `dist`, so run `npm run build` after merges or it shows stale games. A dev server holding a port with `--strictPort` (for example one left running from a Codex worktree) blocks `.claude/launch.json` from starting main's server.
