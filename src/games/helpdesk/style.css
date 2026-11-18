@@ -366,3 +366,15 @@ svg .pk-pulse, svg .pk-shake { transform-box: fill-box; transform-origin: center
 
 .pk-scene { text-align: left; }
 .pk .pk-btn .pk-cost { color: var(--ink); text-shadow: none; }
+
+/* ---------- How to play (shared shell guide, themed) ---------- */
+.fg-guide.pk-guide { --g-bg: #fffaf0; --g-panel: #fff6e4; --g-ink: #4b3a33; --g-muted: #8a766c; --g-line: #f0dfc4; --g-accent: #f6a81c; --g-on-accent: #fff;
+  --g-art-bg: #fff6e4; --g-font: 'PK Body', var(--font); --g-title-font: 'PK Round', 'PK Body', sans-serif; }
+.fg-guide.pk-guide::backdrop { background: rgba(75, 58, 51, 0.42); }
+.pk-guide .fg-title { font-weight: 700; }
+.pk-guide .fg-points li { font-weight: 700; }
+.pk-guide .fg-next { box-shadow: 0 4px 0 #d98200; text-shadow: 0 1px 0 rgba(120, 70, 0, 0.35); font-weight: 900; }
+.pk-guide .fg-back { box-shadow: 0 4px 0 #f0dfc4; }
+.pk-guide .fg-nav button:active { transform: translateY(3px) scale(0.98); }
+.pk-guide .fg-skip { color: var(--g-muted); }
+.pk-guide .fg-title { margin: 4px 0 0; }

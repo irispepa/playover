@@ -1,0 +1,59 @@
+.fg-guide {
+  --g-bg: var(--bg, #0e1420); --g-panel: var(--panel, #18212f); --g-ink: var(--text, #eef2f7);
+  --g-muted: var(--muted, #9aa8bc); --g-line: var(--line, #2f3d52); --g-accent: var(--accent, #f0b44c);
+  --g-on-accent: #10141c; --g-font: var(--font, system-ui, sans-serif); --g-title-font: var(--g-font);
+  --g-art-bg: var(--g-panel);
+  box-sizing: border-box; width: min(400px, calc(100% - 28px)); max-height: calc(100% - 32px - var(--sat, 0px) - var(--sab, 0px));
+  margin: auto; padding: 16px 18px 18px; border: 1px solid var(--g-line); border-radius: 26px;
+  background: var(--g-bg); color: var(--g-ink); font-family: var(--g-font);
+  display: flex; flex-direction: column; gap: 14px; overflow: hidden auto;
+  box-shadow: 0 30px 90px #0008; touch-action: pan-y; user-select: none; -webkit-user-select: none;
+}
+.fg-guide:not([open]) { display: none; }
+.fg-guide:focus { outline: none; }
+.fg-guide::backdrop { background: #070b14b8; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.fg-guide * { box-sizing: border-box; }
+.fg-guide button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+.fg-guide button:focus-visible { outline: 3px solid var(--g-accent); outline-offset: 2px; }
+
+.fg-top { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: -6px -6px 0 0; }
+.fg-count { font-size: 12px; color: var(--g-muted); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.fg-skip { min-height: 44px; min-width: 64px; padding: 0 12px; border-radius: 22px; font-size: 14px; font-weight: 600; color: var(--g-muted); }
+.fg-skip:active { background: var(--g-panel); }
+
+.fg-stack { display: grid; }
+.fg-card { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 12px; visibility: hidden; }
+.fg-card.fg-on { visibility: visible; }
+.fg-card.fg-in-r { animation: fg-in-r .22s ease-out; }
+.fg-card.fg-in-l { animation: fg-in-l .22s ease-out; }
+@keyframes fg-in-r { from { opacity: 0; transform: translateX(22px); } }
+@keyframes fg-in-l { from { opacity: 0; transform: translateX(-22px); } }
+
+.fg-art { display: flex; align-items: center; justify-content: center; aspect-ratio: 5 / 3; width: 100%;
+  border-radius: 18px; background: var(--g-art-bg); border: 1px solid var(--g-line); overflow: hidden; }
+.fg-art svg { width: 100%; height: 100%; display: block; }
+.fg-title { margin: 4px 0 0; font-family: var(--g-title-font); font-size: 24px; line-height: 1.15; font-weight: 700; letter-spacing: -.01em; }
+.fg-points { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.fg-points li { position: relative; padding-left: 18px; font-size: 15.5px; line-height: 1.4; color: var(--g-ink); }
+.fg-points li::before { content: ''; position: absolute; left: 2px; top: .52em; width: 7px; height: 7px; border-radius: 50%; background: var(--g-accent); }
+
+.fg-dots { display: flex; justify-content: center; gap: 0; margin-top: 2px; }
+.fg-dot { width: 28px; height: 28px; display: grid; place-items: center; }
+.fg-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--g-line); transition: transform .2s, background .2s; }
+.fg-dot[aria-current="step"]::after { background: var(--g-accent); transform: scale(1.35); }
+
+.fg-nav { display: flex; gap: 10px; }
+.fg-nav button { flex: 1; min-height: 50px; border-radius: 16px; font-size: 16px; font-weight: 700; }
+.fg-back { border: 1px solid var(--g-line) !important; background: var(--g-panel) !important; }
+.fg-next { background: var(--g-accent) !important; color: var(--g-on-accent) !important; }
+.fg-nav button:active { transform: scale(.98); filter: brightness(1.08); }
+
+@media (max-height: 700px) {
+  .fg-guide { gap: 10px; padding: 12px 16px 14px; }
+  .fg-art { aspect-ratio: 2 / 1; }
+  .fg-title { font-size: 21px; }
+  .fg-points li { font-size: 14.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fg-card, .fg-dot::after { animation: none !important; transition: none !important; }
+}

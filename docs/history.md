@@ -39,3 +39,10 @@ An append-only log of sessions and the decisions with lasting value. Not auto-lo
 - Everbrook (`everbrook`, city builder), Lanternfall (`lanternfall`, mystery visual novel) and Patch & Kettle (`helpdesk`, cozy IT) were finished on `claude/niko-game-collection-2eb773` and merged into `main`. Nine games now ship in the illustrated launcher.
 - `npm test` now runs all nine sim suites. Everbrook takes about 18 s.
 - Dev vs preview: `npm run preview` serves `dist`, so run `npm run build` after merges or it shows stale games. A dev server holding a port with `--strictPort` (for example one left running from a Codex worktree) blocks `.claude/launch.json` from starting main's server.
+
+## 2026-11-17 · Session 3 · Opus 5.5 · How to play guides for six games (branch `claude/playover-missing-tutorials-ca78d7`)
+- Added a shared guide component, `src/shell/guide.js` + `guide.css` (`openGuide`): swipeable cards with page dots, Back/Next, Skip, arrow keys and Escape. All cards stack in one grid cell so the box keeps the tallest card's height. Themed per game through `--g-*` variables. Documented in `src/shell/CONTRACT.md`.
+- Odd Crown, Pocket Planets, Reef Relay, Everbrook, Patch & Kettle and Lanternfall now use it, replacing the old wall-of-text help (or adding help where there was none). Each guide has 3–5 cards and 66–80 words, with SVG art drawn from the game's own palette and helpers. It shows once on the first new game (a `guideSeen` storage flag) and reopens from the ? button or the menu.
+- **Owner's direction:** keep it as short as possible, so players read less and start sooner. Each card has a title of at most 5 words and 1–2 points of about 12 words.
+- One subagent per game worked in parallel, and a review agent went over the whole diff. It found no serious bugs. Three nits were fixed: a desktop drag over a button counted as both a swipe and a click; the Odd Crown theme selector depended on CSS load order; Lanternfall skipped the guide for players who had finished an earlier run.
+- Every guide fits without scrolling at 390×844, 375×667 and 320×568.

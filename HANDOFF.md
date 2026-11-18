@@ -1,7 +1,7 @@
 # Handoff
 
 ## Date / Time / Model
-2026-11-16 23:30 EST · Sonnet 5.5
+2026-11-17 · Opus 5.5
 
 ## Important links
 - [src/shell/CONTRACT.md](src/shell/CONTRACT.md): rules every game follows: offline only, 44 pt targets, safe areas, dispose everything, seeded generation.
@@ -14,14 +14,11 @@
 No multi-session plan. A Codex review pass is planned before deploying. The owner also wants a new, ambitious full three.js game (see Next steps).
 
 ## Branch / Worktree
-- `main` at `/Users/irispepa/Projects/flight-games` holds all nine games (tip `be4b2df` plus the uncommitted housekeeping edits to this file, `docs/history.md` and `package.json`). There is no remote.
+- `main` at `/Users/irispepa/Projects/flight-games` holds all nine games, the Everbrook path fix (`763f565`) and the How to play guides for the six newer games (merged from `claude/playover-missing-tutorials-ca78d7`). There is no remote.
 - Merged and removable: `codex/pocket-games-expansion` (`/Users/irispepa/.codex/worktrees/8ebe/flight-games`), `claude/flight-games-ui-polish-a614ec` and `claude/niko-game-collection-2eb773` (both under `.claude/worktrees/`). Kept for now because Codex may use its worktree for the review and another session may still be in the Niko one.
 
 ## Status
 Nine games on `main`: Tidewater, Deepvault, Bastion Maze, Odd Crown, Pocket Planets, Reef Relay, Everbrook, Lanternfall, Patch & Kettle. `npm test` covers all nine suites and passes. Nothing is hosted, and nothing has been tried on a real iPhone.
-
-## Known bug (open)
-- **Everbrook: the owner cannot see the path tiles.** Roads/paths placed in the city builder are not visible on screen. Not yet investigated; check `src/games/everbrook/render.js` (path or tile materials, layering against the ground, and colour contrast) and the touch placement code in `input.js`. Sim tests pass, so it is likely a render issue.
 
 ## How to run it
 - `npm install`
@@ -32,18 +29,18 @@ Nine games on `main`: Tidewater, Deepvault, Bastion Maze, Odd Crown, Pocket Plan
 - Visual checks: use a private headless Chrome over CDP, as in `docs/history.md` (session 2).
 
 ## Next steps
-1. Fix the Everbrook path-tile visibility bug above.
+1. Shorten the How to play guides of Tidewater, Deepvault and Bastion Maze onto the shared `src/shell/guide.js` (3–5 cards, 1–2 short lines each), and add How to play to Patch & Kettle's title screen. The owner wants this next.
 2. Codex review pass of the whole app before deploying.
 3. New game: a full three.js game that uses the model's strengths to the max (proposal pending the owner's choice).
-4. Polish How to play for Odd Crown, Pocket Planets and Reef Relay to `docs/plans/ui-polish.md`; check Everbrook, Lanternfall and Patch & Kettle against the same standard.
-5. Pick HTTPS hosting (needs the owner's go-ahead), install on an iPhone, check touch feel, safe areas, frame rate and airplane-mode reopening.
-6. Remove the merged branches and worktrees once the Codex review is done.
-7. Work through `docs/wishlist.md`.
+4. Pick HTTPS hosting (needs the owner's go-ahead), install on an iPhone, check touch feel, safe areas, frame rate and airplane-mode reopening.
+5. Remove the merged branches and worktrees once the Codex review is done.
+6. Work through `docs/wishlist.md`.
 
 ## Key decisions
 - PWA, offline, no asset files: all art, models and sounds are made in code.
 - Pure sims with bot tests: keep sim modules free of DOM and three.js.
 - Each game keeps its own UI and CSS prefix; the shared standard is in `docs/plans/ui-polish.md`.
+- How to play guides are short (owner: the less to read, the quicker into the game) and use the shared `openGuide` in `src/shell/guide.js`.
 - Ask before committing or pushing.
 
 ## Known limitations / blockers

@@ -1,7 +1,10 @@
 import { arcade, button, node } from '../../shell/arcade.js';
+import { openGuide } from '../../shell/guide.js';
 import { randomSeed } from '../../shell/rng.js';
 import { newGame, turn, undo, flow, hint, applyHint, validSave } from './sim.js';
 import { createBoard } from './render.js';
+import { GUIDE } from './guide.js';
+import './reef.css';
 export default {
   start(ctx) {
     const a = arcade(ctx, {
@@ -16,7 +19,8 @@ export default {
       direction = 1,
       highlight = -1,
       board = createBoard(a, s),
-      gesture = null;
+      gesture = null,
+      guide = null;
     const level = a.stat('reef', s.level),
       moves = a.stat('turns', s.moves),
       pearls = a.stat('pearls', '0 / 3');
@@ -54,6 +58,7 @@ export default {
       save();
       status();
       if (s.won) victory();
+      else if (fresh && !ctx.storage.get('guideSeen', false)) help();
     }
     function confirmNew() {
       a.modal('Find a new current?', 'A new solvable reef, at the same level. Your restored reef record stays.', [{
@@ -83,7 +88,7 @@ export default {
       }]);
     }
     function tap(index) {
-      if (!active || a.modalOpen || s.won || index === undefined) return;
+      if (!active || a.modalOpen || guide?.open || s.won || index === undefined) return;
       highlight = -1;
       if (turn(s, index, direction)) {
         ctx.audio.play('place');
@@ -116,10 +121,9 @@ export default {
       }
     }
     function help() {
-      a.modal('Follow the water.', 'Tap any coral channel to rotate it. Mint-coloured water flows from the spring on the left. Join matching channel openings to carry it through all three floating pearls and into the shell on the right.\n\nUse “Turn anticlockwise” to change the turning direction. Undo reverses a turn. “A little help” highlights a useful tile; tap it again to set that tile correctly. Hints are unlimited.\n\nEvery reef has a solution. There is no timer or turn limit, and your reef saves after every turn. Later reefs add branching channels.', [{
-        label: 'Let it flow',
-        primary: true
-      }]);
+      guide?.close();
+      ctx.storage.set('guideSeen', true);
+      guide = openGuide(ctx.root, GUIDE);
     }
     a.help.onclick = help;
     function down(e) {
@@ -146,7 +150,7 @@ export default {
     a.stage.canvas.tabIndex = 0;
     a.stage.canvas.setAttribute('aria-label', 'Reef channels. Arrow keys choose a tile; Enter turns it.');
     function key(e) {
-      if (a.modalOpen) return;
+      if (a.modalOpen || guide?.open) return;
       const d = {
         ArrowLeft: -1,
         ArrowRight: 1,
@@ -166,17 +170,14 @@ export default {
     }
     a.stage.canvas.addEventListener('keydown', key);
     status();
-    a.modal('Take the scenic route.', 'Turn coral channels, carry a quiet current, and wake the pearls. A fresh, solvable little reef each time you play.', [...(validSave(saved) ? [{
+    a.modal('Take the scenic route.', 'Turn coral channels to wake the pearls. Every reef can be solved.', [...(validSave(saved) ? [{
       label: 'Continue your reef',
       primary: true,
       fn: () => start(false)
     }] : []), {
       label: 'Explore a new reef',
       primary: !validSave(saved),
-      fn: () => {
-        start(true, ctx.storage.get('level', 1));
-        help();
-      }
+      fn: () => start(true, ctx.storage.get('level', 1))
     }], {
       onCancel: ctx.exit
     });
@@ -187,6 +188,7 @@ export default {
     window.addEventListener('pagehide', save);
     return {
       dispose() {
+        guide?.close();
         save();
         document.removeEventListener('visibilitychange', visibility);
         window.removeEventListener('pagehide', save);

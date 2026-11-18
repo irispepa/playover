@@ -2,6 +2,9 @@ import { arcade, button, node } from '../../shell/arcade.js';
 import { randomSeed } from '../../shell/rng.js';
 import { newGame, NAMES, TYPES, MOVES, ACTIONS, at, square, move, legalMoves, kingInDanger, reveal, remember, undo, chooseAI, validSave } from './sim.js';
 import { createBoard } from './render.js';
+import { openGuide } from '../../shell/guide.js';
+import { GUIDE_PAGES } from './guide.js';
+import './guide.css';
 export default {
   start(ctx) {
     const a = arcade(ctx, {
@@ -16,7 +19,8 @@ export default {
       pending = 0,
       active = false,
       failures = 0,
-      finished = false;
+      finished = false,
+      guide = null;
     const board = createBoard(a);
     board.setSelectionGetter(() => selected);
     const turnStat = a.stat('round', 1),
@@ -81,6 +85,7 @@ export default {
       save();
       status();
       endCheck();
+      if (freshRun && !ctx.storage.get('guideSeen', false)) help();
     }
     function confirmNew() {
       a.modal('Shuffle the court?', 'New movements, new powers, new hidden nonsense. Your current court will be replaced.', [{
@@ -128,7 +133,7 @@ export default {
       status();
     }
     function tap(x, y) {
-      if (!active || a.modalOpen || s.turn !== 0 || s.winner !== null || pending > 0) return;
+      if (!active || a.modalOpen || guide || s.turn !== 0 || s.winner !== null || pending > 0) return;
       const p = at(s, x, y),
         sel = s.pieces.find(p => p.id === selected);
       if (sel?.side === 0 && !(sel.x === x && sel.y === y)) {
@@ -194,7 +199,7 @@ export default {
     }
     a.stage.canvas.addEventListener('keydown', key);
     a.stage.onFrame(dt => {
-      if (!active || a.modalOpen || s.winner !== null) return;
+      if (!active || a.modalOpen || guide || s.winner !== null) return;
       if (s.turn === 1) {
         pending -= dt;
         if (pending <= 0) {
@@ -208,24 +213,27 @@ export default {
       }
     });
     function help() {
-      a.modal('Forget everything you know.', 'Capture the blue king. You are gold. Kings are protected for the first three rounds so you can experiment. After that, kings can be captured like any piece. There is no check, castling or promotion.\n\nEvery piece type gets a random movement AND capture power each new court. They start secret. Tap a gold piece, then test a square. Failed attempts are free; two failed tests uncover its rule. Successful moves and enemy moves also reveal rules.\n\nPeek spends insight. Captures and every three rounds earn more. Known landing squares glow gold. The Notebook keeps discoveries. Undo reverses a full turn and keeps your knowledge.\n\nThree unmarked tiles hide a spring, a confetti cannon, and a trapdoor that only affects kings. Your first royal fall has a parachute. After that, mind the marked hole.', [{
-        label: 'Let’s cause trouble',
-        primary: true
-      }]);
+      guide?.close();
+      ctx.storage.set('guideSeen', true);
+      guide = openGuide(ctx.root, {
+        className: 'oddcrown-guide',
+        pages: GUIDE_PAGES,
+        doneLabel: 'Cause trouble',
+        onClose: () => {
+          guide = null;
+        }
+      });
     }
     a.help.onclick = help;
     status();
-    a.modal('Nobody read the rules.', 'A tiny chess court. Secret movements. Highly unprofessional royalty.\n\nDiscover the rules as you play, then use them against the blue court. Every fresh court shuffles everything again.', [...(validSave(saved) ? [{
+    a.modal('Nobody read the rules.', 'A tiny chess court with secret rules. Work them out, then use them against the blue court.', [...(validSave(saved) ? [{
       label: s.winner !== null ? 'Revisit last court' : 'Continue your court',
       primary: true,
       fn: () => start(false)
     }] : []), {
       label: 'Play a fresh court',
       primary: !validSave(saved),
-      fn: () => {
-        start(true);
-        help();
-      }
+      fn: () => start(true)
     }], {
       onCancel: ctx.exit
     });
@@ -241,6 +249,7 @@ export default {
         window.removeEventListener('pagehide', save);
         a.stage.canvas.removeEventListener('pointerup', onPointer);
         a.stage.canvas.removeEventListener('keydown', key);
+        guide?.close();
         a.dispose();
       }
     };

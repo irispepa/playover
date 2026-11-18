@@ -3,6 +3,8 @@ import { ICON, CAT_ICON } from './icons.js';
 import { B, CATS, RES, RES_KEYS, ERAS, SERVICES, HOME_LEVELS, DISC, DISC_BY_ID, SEASONS, DAYS_PER_SEASON, PRICES, QUESTS } from './data.js';
 import * as S from './sim.js';
 import { idx } from './gen.js';
+import { openGuide } from '../../shell/guide.js';
+import { guidePages } from './howto.js';
 
 export function el(tag, cls, html) {
   const n = document.createElement(tag);
@@ -23,12 +25,13 @@ export function costHtml(cost, s) {
   return `<div class="eb-cost">${parts.join('') || '<span>Free</span>'}</div>`;
 }
 
-export function createUI(stage, g) {
+// `host` is the game root: the guide dialog must not sit inside `.eb`, which ignores pointer events.
+export function createUI(stage, g, host) {
   const root = el('div', 'eb');
   stage.ui.append(root);
   const top = el('div', 'eb-top'), side = el('div', 'eb-side'), bottom = el('div', 'eb-bottom'), toasts = el('div', 'eb-toasts');
   root.append(top, side, bottom, toasts);
-  let modals = 0, titleEl = null, popEl = null;
+  let modals = 0, titleEl = null, popEl = null, guide = null;
   const tap = (node, fn) => { node.addEventListener('click', (e) => { e.stopPropagation(); fn(e); }); return node; };
   const accent = () => root.style.setProperty('--acc', ERAS[g.s ? g.s.era : 0].accent);
 
@@ -456,10 +459,10 @@ export function createUI(stage, g) {
       b.append(tap(el('button', 'eb-btn', esc(button)), () => { g.tap(); m.close(); }));
     } });
   }
-  function openEra(era) {
+  function openEra(era, onClose) {
     const e = ERAS[era];
     const news = Object.values(B).filter((d) => d.era === era && !d.tile).map((d) => d.id);
-    splash({ over: era === 0 ? 'A new valley' : 'A new age dawns', name: e.name, per: e.period, text: e.blurb, thumbs: era === 0 ? [] : news, button: era === 0 ? 'Begin' : 'Onward' });
+    splash({ over: era === 0 ? 'A new valley' : 'A new age dawns', name: e.name, per: e.period, text: e.blurb, thumbs: era === 0 ? [] : news, button: era === 0 ? 'Begin' : 'Onward', onClose });
   }
   function openFinale() {
     const s = g.s;
@@ -469,15 +472,16 @@ export function createUI(stage, g) {
       button: 'Keep tending the town' });
   }
 
-  function openHelp() {
-    modal({ title: 'How to play', body(b) {
-      b.innerHTML = `<p><b>Place homes</b> and the things households want. Homes grow by themselves when fresh water, gathering places, markets and more are within reach. Paths carry those services further.</p>
-<p><b>Mind the land.</b> Foragers and woodcutters like woodland, stonecutters and mines must touch the hills, kilns and fishers the water. The strip above the build bar shows the bonus for each spot.</p>
-<p><b>Learn.</b> Story circles and schools make Knowledge. Spend it on Discoveries to open new buildings.</p>
-<p><b>Celebrate.</b> Culture fills the festival ring. Each festival is a gift of your choosing.</p>
-<p><b>Raise the wonder</b> of each age and grow the town to step into the next. There are six ages, no enemies and no hurry.</p>
-<h3>Controls</h3><p>Drag to move, pinch to zoom, twist to turn. On a computer: drag, scroll wheel, right-drag or Q and E to turn, WASD to move, space to pause, Escape to cancel.</p>`;
-    } });
+  // The How to play guide. `first` is the automatic showing at the start of the first valley.
+  function openHelp(first = false) {
+    if (guide) return;
+    if (popEl) { popEl.remove(); popEl = null; }
+    guide = openGuide(host, {
+      className: 'eb-guide',
+      pages: guidePages(g.thumb),
+      doneLabel: first ? 'Settle the valley' : 'Back to the valley',
+      onClose: () => { guide = null; if (root.isConnected) hud(); },
+    });
   }
 
   function openMenu() {
@@ -506,10 +510,10 @@ export function createUI(stage, g) {
   }
 
   return {
-    hud, rebuildBar, refreshBottom, refreshInfo, toast, float, openEra, openFinale, openEvent, openDiscoveries, showTitle, accent,
-    blocking: () => modals > 0 || !!titleEl,
+    hud, rebuildBar, refreshBottom, refreshInfo, toast, float, openEra, openFinale, openEvent, openDiscoveries, openHelp, showTitle, accent,
+    blocking: () => modals > 0 || !!titleEl || !!guide,
     setCat(c) { cat = c; },
     closePop() { if (popEl) { popEl.remove(); popEl = null; } },
-    dispose() { root.remove(); },
+    dispose() { root.remove(); guide?.close(); },
   };
 }
