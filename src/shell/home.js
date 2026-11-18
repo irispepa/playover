@@ -25,7 +25,7 @@ function image(name, className, alt = '') {
   return node;
 }
 
-export function createHome({ games, audio, version, onPlay, onInfo, onSound }) {
+export function createHome({ games, audio, builtAt, onPlay, onInfo, onSound }) {
   const home = el('main', 'po-home');
   const collection = el('div', 'po-collection');
   const header = el('header', 'po-header');
@@ -59,7 +59,12 @@ export function createHome({ games, audio, version, onPlay, onInfo, onSound }) {
     entry.append(play, summary);
     grid.append(entry);
   }
-  collection.append(header, grid, el('span', 'po-version', `v${version}`));
+  const updated = el('time', 'po-updated', `Updated ${new Date(builtAt).toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  })}`);
+  updated.dateTime = builtAt;
+  updated.title = `Build time: ${new Date(builtAt).toLocaleString()}`;
+  collection.append(header, grid, updated);
   home.append(collection);
   return { node: home, updateSound };
 }

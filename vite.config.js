@@ -1,12 +1,9 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { readFileSync } from 'node:fs';
-
-const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 export default defineConfig({
   base: './',
-  define: { __APP_VERSION__: JSON.stringify(version) },
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   build: { target: 'es2020', chunkSizeWarningLimit: 1200 },
   // NO_HMR=1 serves without hot reload, for automated play tests while files are changing.
   server: process.env.NO_HMR ? { hmr: false, watch: null } : {},

@@ -18,7 +18,7 @@
 .po-name { display:block; min-height:22px; font-size:.78125rem; font-weight:650; line-height:1.28; letter-spacing:-.15px; padding:3px 0; overflow-wrap:anywhere; }
 .po-chevron { width:7px; height:7px; margin-left:3px; vertical-align:middle; }
 .po-genre { display:block; color:var(--po-muted); font-size:.71875rem; line-height:1.22; min-height:28px; padding:1px 1px 0; overflow-wrap:anywhere; }
-.po-version { position:absolute; right:max(12px,var(--sar)); bottom:max(3px,var(--sab)); font-size:10px; line-height:12px; color:#9eafbf; }
+.po-updated { position:absolute; right:max(12px,var(--sar)); bottom:max(3px,var(--sab)); font-size:10px; line-height:12px; color:#9eafbf; }
 .po-home button:focus-visible, .po-sheet button:focus-visible, .po-loading button:focus-visible { outline:3px solid #8cd3ed; outline-offset:3px; }
 .po-art:active { opacity:.85; }
 .po-summary:active { color:var(--po-accent); }
@@ -42,4 +42,3 @@
 .po-guide-status { font-size:14px; color:#b6c3d0; margin-top:16px; }
 @media (min-width:600px) { .po-collection { padding-top:max(40px,var(--sat)); padding-bottom:32px; } .po-grid { gap:20px 18px; margin-top:24px; } .po-summary { padding-top:7px; min-height:64px; } .po-name { font-size:1rem; } .po-genre { font-size:.8125rem; } }
 @media (max-width:350px) { .po-wordmark { width:calc(100vw - 170px); } .po-header { gap:8px; } }
-@media (max-height:650px) { .po-version { display:none; } }

@@ -116,7 +116,7 @@ function render(next) {
     return;
   }
   home = createHome({
-    games: GAMES, audio, version: __APP_VERSION__, onSound: soundChanged,
+    games: GAMES, audio, builtAt: __BUILD_TIME__, onSound: soundChanged,
     onPlay: (game) => { position.focus = `play-${game.id}`; audio.play('tap'); navigate({ kind: 'game', id: game.id }); },
     onInfo: (game) => { position.focus = `info-${game.id}`; navigate({ kind: 'info', id: game.id }); },
   });
