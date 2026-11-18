@@ -2,6 +2,8 @@ import { arcade, button, node } from '../../shell/arcade.js';
 import { randomSeed } from '../../shell/rng.js';
 import { newGame, move, undo, recycle, validSave, planet, PLANETS } from './sim.js';
 import { createBoard } from './render.js';
+import { openGuide, MORE_LABEL } from '../../shell/guide.js';
+import { guidePages, morePages } from './guide.js';
 export default {
   start(ctx) {
     const a = arcade(ctx, {
@@ -15,7 +17,8 @@ export default {
       active = false,
       recycling = false,
       gesture = null,
-      locked = 0;
+      locked = 0,
+      guide = null;
     let best = ctx.storage.get('best', 0);
     const board = createBoard(a);
     const score = a.stat('stardust', s.score),
@@ -64,6 +67,7 @@ export default {
       board.sync(s);
       save();
       status();
+      if (fresh && !ctx.storage.get('guideSeen', false)) help();
     }
     function confirmNew() {
       a.modal('A fresh patch of space?', 'Start with two tiny moons. Your best stardust score and discovered planets stay.', [{
@@ -75,7 +79,7 @@ export default {
       }]);
     }
     function slide(dir) {
-      if (!active || a.modalOpen || recycling || locked > 0) return;
+      if (!active || a.modalOpen || guide || recycling || locked > 0) return;
       const result = move(s, dir);
       if (!result) {
         ctx.audio.play('tap');
@@ -145,19 +149,42 @@ export default {
       }
       content.append(node('p', '', 'Each pair becomes the next planet. Reach 2048 to make a Sun; keep merging for a higher score.'));
       a.modal('The pocket atlas', content, [{
+        label: MORE_LABEL,
+        fn: moreTips
+      }, {
         label: 'Back to space',
         primary: true
       }]);
     }
     function help() {
-      a.modal('A universe under your thumb.', 'Swipe up, down, left or right to slide every planet. Two equal planets merge into one larger world. Each slide adds a new moon or rose planet.\n\nPlan ahead: keep your biggest planets near a corner. A planet can merge only once per slide. Aim for a 2048 Sun, then keep exploring.\n\nUndo reverses your last move. Recycle removes any one planet; you start with two charges and earn more every 512 stardust.\n\nNo timer. No rush. Your galaxy saves after every move.', [{
-        label: 'Back to the stars',
-        primary: true
-      }]);
+      guide?.close();
+      ctx.storage.set('guideSeen', true);
+      guide = openGuide(ctx.root, {
+        className: 'planets-guide',
+        pages: guidePages(),
+        more: morePages(),
+        doneLabel: 'Start exploring',
+        onClose() {
+          guide = null;
+        }
+      });
+    }
+    // The extra cards on their own, from the atlas. Same guide slot, so slides and swipes stay blocked.
+    function moreTips() {
+      guide?.close();
+      guide = openGuide(ctx.root, {
+        className: 'planets-guide',
+        pages: morePages(),
+        label: MORE_LABEL,
+        doneLabel: 'Got it',
+        onClose() {
+          guide = null;
+        }
+      });
     }
     a.help.onclick = help;
     function down(e) {
-      if (a.modalOpen) return;
+      if (a.modalOpen || guide) return;
       gesture = {
         x: e.clientX,
         y: e.clientY,
@@ -193,7 +220,7 @@ export default {
         ArrowUp: 'up',
         ArrowDown: 'down'
       };
-      if (dirs[e.key] && !a.modalOpen) {
+      if (dirs[e.key] && !a.modalOpen && !guide) {
         e.preventDefault();
         slide(dirs[e.key]);
       }
@@ -205,17 +232,14 @@ export default {
     a.stage.onFrame(dt => locked = Math.max(0, locked - dt));
     board.sync(s);
     status();
-    a.modal('A whole universe. Pocket-sized.', 'Slide tiny planets together. Grow moons into oceans, rings, and eventually a sun. A calm puzzle for the long way home.', [...(validSave(saved) ? [{
+    a.modal('A whole universe. Pocket-sized.', 'Slide tiny planets together and grow a sun. A calm puzzle, no rush.', [...(validSave(saved) ? [{
       label: 'Continue your galaxy',
       primary: true,
       fn: () => start(false)
     }] : []), {
       label: 'Start a new galaxy',
       primary: !validSave(saved),
-      fn: () => {
-        start(true);
-        help();
-      }
+      fn: () => start(true)
     }], {
       onCancel: ctx.exit
     });
@@ -227,6 +251,7 @@ export default {
     return {
       dispose() {
         save();
+        guide?.close();
         document.removeEventListener('visibilitychange', visibility);
         window.removeEventListener('pagehide', save);
         window.removeEventListener('keydown', key);

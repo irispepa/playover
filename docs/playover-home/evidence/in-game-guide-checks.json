@@ -1,0 +1,51 @@
+{
+  "base": "http://127.0.0.1:5328/",
+  "results": [
+    {
+      "id": "everbrook",
+      "first": "Build a town",
+      "count": 5
+    },
+    {
+      "id": "lanternfall",
+      "first": "Find the Moon Lantern",
+      "count": 4
+    },
+    {
+      "id": "helpdesk",
+      "first": "Fix what's broken",
+      "count": 5
+    },
+    {
+      "id": "oddcrown",
+      "first": "Capture the blue king",
+      "count": 5
+    },
+    {
+      "id": "planets",
+      "first": "Swipe to slide",
+      "count": 3
+    },
+    {
+      "id": "reef",
+      "first": "Turn the channels",
+      "count": 3
+    },
+    {
+      "id": "builder",
+      "first": "Pick, tap, build",
+      "count": 4
+    },
+    {
+      "id": "roguelike",
+      "first": "Move and dash",
+      "count": 5
+    },
+    {
+      "id": "towerdefence",
+      "first": "Defend the core",
+      "count": 5
+    }
+  ],
+  "errors": []
+}

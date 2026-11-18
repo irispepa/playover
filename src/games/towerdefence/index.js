@@ -113,7 +113,8 @@ export default {
       toTitle: () => { hud.closeModal(); s = null; showTitle(); },
       coachDone: () => coachDone(),
       showWaveInfo: () => { if (!s) return; paused = true; hud.showWaveInfo(s, () => { paused = false; }); },
-    });
+      showTowers: () => { if (!s) return; ctx.audio.play('tap'); hud.showTowers(); }, // from the tray or a tower sheet; the open modal pauses the run
+    }, ctx.root);
     renderer.setShowPaths(settings.paths);
 
     function coachDone() { if (!settings.seenCoach) { settings.seenCoach = true; saveSettings(); } }
@@ -153,7 +154,7 @@ export default {
       s.autoWaves = settings.autoWaves;
       afterLoad();
       save();
-      if (!settings.seenHow) { settings.seenHow = true; saveSettings(); paused = true; hud.showHow(() => { paused = false; }, { doneLabel: 'Start playing' }); }
+      if (!settings.seenHow) { settings.seenHow = true; saveSettings(); paused = true; hud.showHow(() => { paused = false; }, { doneLabel: 'Start building' }); }
     }
     function afterLoad() {
       if (import.meta.env.DEV) window.__bm = { get s() { return s; }, canBuild, build, upgrade, callWave }; // dev-only handle for automated play tests
@@ -315,7 +316,7 @@ export default {
     const safeTop = () => bmOff().y, safeLeft = () => bmOff().x;
 
     function onDown(e) {
-      if (!s || hud.modal) return;
+      if (!s || hud.modal || hud.guideOpen) return;
       try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
       const p = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, t0: performance.now(), moved: false, role: 'tap' };
       pointers.set(e.pointerId, p);
@@ -382,12 +383,13 @@ export default {
       if (!s || e.target && e.target.tagName === 'INPUT') return;
       const k = e.key.toLowerCase();
       if (e.type === 'keydown') {
+        if (hud.guideOpen) return; // the guide pages with the arrows and closes with Escape itself
         keys.add(k);
         if (k === ' ' && c.heroMode) heroDash(s);
         else if (k === 'e' && c.heroMode) heroUlt(s);
         else if (k === 'q' && c.heroMode) cycleWeapon(s);
         else if (k === 'h') toggleHero();
-        else if (k === 'escape' || k === 'p') { if (hud.modal) { if (!s.pendingCards && !s.over) { hud.closeModal(); paused = false; } } else openPause(); }
+        else if (k === 'escape' || k === 'p') { if (hud.modal) { if (hud.back()) { /* went back to the menu underneath */ } else if (!s.pendingCards && !s.over) { hud.closeModal(); paused = false; } } else openPause(); }
         else if (k === '0') c.speed = 0; else if (k === '1') c.speed = 1; else if (k === '2') c.speed = 2; else if (k === '3' || k === '4') c.speed = 4;
       } else keys.delete(k);
     }
@@ -470,7 +472,7 @@ export default {
     stage.onFrame((dt, elapsed) => {
       if (disposed) return;
       if (!s) return;
-      const running = !paused && c.speed > 0 && !s.pendingCards && !s.over && !hud.modal;
+      const running = !paused && c.speed > 0 && !s.pendingCards && !s.over && !hud.modal && !hud.guideOpen;
       if (running) {
         heroInput();
         acc += dt * c.speed;

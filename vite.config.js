@@ -1,14 +1,17 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { readFileSync } from 'node:fs';
+
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 export default defineConfig({
   base: './',
+  define: { __APP_VERSION__: JSON.stringify(version) },
   build: { target: 'es2020', chunkSizeWarningLimit: 1200 },
   // NO_HMR=1 serves without hot reload, for automated play tests while files are changing.
   server: process.env.NO_HMR ? { hmr: false, watch: null } : {},
   plugins: [
     VitePWA({
-      // 'prompt': a new version waits until the player is on the menu (see src/main.js), so it never reloads mid-game.
       registerType: 'prompt',
       includeAssets: ['icon-180.png', 'icon-192.png', 'icon-512.png'],
       workbox: {
@@ -17,13 +20,13 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
       },
       manifest: {
-        name: 'Flight Games',
-        short_name: 'Flight Games',
+        name: 'Playover',
+        short_name: 'Playover',
         description: 'Nine offline games for the flight: builders, mysteries, strategy and quiet puzzles.',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#0e1420',
-        theme_color: '#0e1420',
+        background_color: '#101e2b',
+        theme_color: '#101e2b',
         start_url: './',
         scope: './',
         icons: [

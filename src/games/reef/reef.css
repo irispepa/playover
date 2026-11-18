@@ -1,0 +1,7 @@
+/* How to play guide, themed like the reef (matches .arc-reef in src/shell/arcade.css). */
+.fg-guide.reef-guide {
+  --g-bg: #103a46; --g-panel: #1a4a56; --g-ink: #eef4f3; --g-muted: #acced4; --g-line: #397280;
+  --g-accent: #a5e6ce; --g-on-accent: #103a46; --g-art-bg: #164552;
+  --g-font: var(--font); --g-title-font: var(--font);
+}
+.fg-guide.reef-guide .fg-title { font-weight: 750; letter-spacing: -.5px; }

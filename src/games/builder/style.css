@@ -202,63 +202,12 @@
 .tw-deal .tw-btn { min-width: 92px; font-weight: 700; }
 .tw-deal .tw-costs { font-size: 14.5px; font-weight: 600; gap: 2px 8px; }
 .tw-deal .tw-costs .tw-ic { width: 18px; height: 18px; }
-/* How to play */
-.tw-skip { padding: 0 14px; }
-.tw-hpage h2 { margin: 12px 0 6px; }
-.tw-hpage.fwd { animation: tw-slide-l .22s ease-out; }
-.tw-hpage.back { animation: tw-slide-r .22s ease-out; }
-@keyframes tw-slide-l { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes tw-slide-r { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
-.tw-hpic { height: 140px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid var(--tw-line); display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px; padding: 6px; overflow: hidden; }
-.tw-dg { width: 100%; height: 100%; max-width: 330px; }
-.tw-dg text { font-family: var(--font); fill: var(--text); }
-.tw-dg .lb { font-size: 12.5px; font-weight: 700; }
-.tw-dg .sb { font-size: 10.5px; fill: var(--muted); }
-.tw-dg .ph { fill: #0b131e; stroke: rgba(255,255,255,0.28); stroke-width: 1.5; }
-.tw-dg .hud { fill: #18263a; stroke: rgba(255,255,255,0.25); stroke-width: 0.8; }
-.tw-dg .bd circle { fill: var(--accent); stroke: #172334; stroke-width: 1.5; }
-.tw-dg .bd text { font-size: 9.5px; font-weight: 800; fill: #1b1408; }
-.tw-dg .pn { fill: rgba(255,255,255,0.04); stroke: var(--tw-line); }
-.tw-dg .tr { stroke: var(--tw-sea); stroke-width: 2; fill: none; stroke-dasharray: 4 3; }
-.tw-dg .ar { stroke: var(--tw-sea); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.tw-dg .fg { fill: #f4d6b8; stroke: #fff; stroke-width: 1.5; }
-.tw-dg .rp { fill: none; stroke: var(--tw-sea); stroke-width: 2; }
-.tw-hcap { font-size: 12px; font-weight: 600; color: var(--muted); }
-.tw-hrow { display: flex; align-items: center; justify-content: center; gap: 10px; }
-.tw-hitem { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 60px; text-align: center; font-size: 11.5px; line-height: 1.25; color: #cfd8e6; }
-.tw-hitem img { width: 56px; height: 56px; }
-.tw-hitem b { color: var(--text); }
-.tw-hic { width: 48px; height: 48px; border-radius: 14px; background: rgba(255,255,255,0.06); display: grid; place-items: center; }
-.tw-hic .tw-ic { width: 28px; height: 28px; }
-.tw-hitem .tw-hic img { width: 44px; height: 44px; }
-.tw-hitem .tw-chip { background: var(--tw-panel); border: 1px solid var(--tw-line); width: 64px; }
-.tw-harr { color: var(--muted); display: grid; place-items: center; }
-.tw-hflow { display: flex; align-items: center; justify-content: center; gap: 6px; }
-.tw-hstep { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.tw-hstep small { font-size: 11.5px; color: var(--muted); font-weight: 600; }
-.tw-hcard { width: 74px; height: 84px; border-radius: 12px; border: 1px solid var(--accent); background: rgba(240,180,76,0.16);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
-.tw-hcard img { width: 48px; height: 48px; }
-.tw-hgrid { width: 84px; height: 84px; }
-.tw-hbtn { min-width: 74px; height: 44px; border-radius: 12px; background: var(--good); color: #062019; font-weight: 700; font-size: 13px;
-  display: flex; align-items: center; justify-content: center; gap: 4px; margin: 20px 0; }
-.tw-hship { width: 52px; height: 52px; border-radius: 14px; background: #1d4d6b; border: 1px solid var(--tw-sea); display: grid; place-items: center; margin: 2px 0; }
-.tw-hladder { gap: 4px; }
-.tw-hrung { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 7px; border-radius: 12px; background: rgba(255,255,255,0.06);
-  font-size: 11px; text-align: center; line-height: 1.2; }
-.tw-hrung span { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
-.tw-hrung small { color: var(--muted); font-size: 10.5px; }
-.tw-hladder .tw-hitem { min-width: 0; }
-.tw-hladder .tw-hitem img { width: 48px; height: 48px; }
-.tw-hl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; min-height: 200px; }
-.tw-hl li { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; line-height: 1.38; color: #dbe2ec; }
-.tw-hl .ic { flex: none; width: 28px; height: 28px; border-radius: 9px; background: rgba(255,255,255,0.07); display: grid; place-items: center; color: var(--accent); margin-top: -2px; }
-.tw-pager { display: flex; gap: 8px; margin-top: 12px; }
-.tw-pager .tw-btn { flex: 1; min-height: 48px; font-weight: 600; }
-.tw-pdots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
-.tw-pdots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: transform .2s; }
-.tw-pdots i.on { background: var(--accent); transform: scale(1.3); }
+/* How to play: the shared guide (src/shell/guide.js), in the panel colours of the game's own cards */
+.fg-guide.tw-guide {
+  --g-bg: #172334; --g-panel: #213047; --g-ink: #eef2f7; --g-muted: #9aa8bc; --g-line: #33445c;
+  --g-accent: #4cc9a0; --g-on-accent: #062019; --g-art-bg: #2b8fd6; --g-font: var(--font); --g-title-font: var(--font);
+}
+.fg-guide.tw-guide .fg-title { font-weight: 800; letter-spacing: -0.02em; }
 .tw-score { font-size: 44px; font-weight: 800; text-align: center; color: var(--tw-gold); margin: 6px 0; font-variant-numeric: tabular-nums; }
 .tw-parts { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 6px 12px; }
 .tw-dealhd { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -287,8 +236,8 @@
 
 /* Respect reduced motion: no pulses, flashes or slides. */
 @media (prefers-reduced-motion: reduce) {
-  .tw-shipbtn, .tw-toast, .tw-mbox, .tw-hpage.fwd, .tw-hpage.back, .tw-coach .ring, .tw-coach .bub { animation: none; }
+  .tw-shipbtn, .tw-toast, .tw-mbox, .tw-coach .ring, .tw-coach .bub { animation: none; }
   .tw-flash.go { animation: none; opacity: 0; }
-  .tw-toast.out, .tw-goal .bar, .tw-pdots i { transition: none; }
+  .tw-toast.out, .tw-goal .bar { transition: none; }
   .tw-btn:active { transform: none; }
 }

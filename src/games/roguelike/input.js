@@ -67,6 +67,8 @@ export function createInput(layer, joyBase, joyKnob, opts = {}) {
   const KEYMAP = { Space: 'dash', ShiftLeft: 'dash', ShiftRight: 'dash', KeyQ: 'ab1', KeyJ: 'ab1', KeyE: 'ab2', KeyK: 'ab2', KeyF: 'potion', KeyH: 'potion', KeyB: 'bomb', KeyR: 'interact', Enter: 'interact' };
   on(window, 'keydown', (e) => {
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    // The How to play guide owns its keys while it is open, wherever focus happens to be.
+    if ((e.target && e.target.closest && e.target.closest('dialog')) || document.querySelector('dialog.fg-guide[open]')) return;
     if (e.code === 'Escape' || e.code === 'KeyP') { if (opts.onPause) opts.onPause(); e.preventDefault(); return; }
     if (e.code === 'KeyI' || e.code === 'Tab') { if (opts.onInventory) opts.onInventory(); e.preventDefault(); return; }
     if (!enabled) return;

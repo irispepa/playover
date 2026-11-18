@@ -11,10 +11,11 @@ Deferred items found while building; none block play.
 - Several milestones often complete at once.
 - Harsh difficulty scores well above Standard.
 - Camera cannot rotate.
-- How to play opened from the pause menu closes back to the island, not to the pause menu.
 - The Royal Charter modal was restyled but only checked in code; a headless run cannot reach it quickly.
 
 ## Deepvault (roguelike)
+- On 320x568, a returning player's title screen (Continue plus stats) scrolls by about 9 px.
+- `ui.js` imports `BIOMES` but never uses it.
 - Boss floors, shops, inventory and three of four classes are covered by the headless test only, not seen on screen.
 - Palette is muted; enemies can be dark against the floor.
 - Loading a save starts at the floor entrance.
@@ -24,6 +25,7 @@ Deferred items found while building; none block play.
 - First-run button labels show on floor 1 of the first run only (meta.runs === 0); there is no way to bring them back.
 
 ## Bastion Maze (tower defence)
+- Towers reference tags wrap to two lines on 320-wide screens for some towers.
 - Tower models are separate meshes (a few hundred draw calls with 60+ towers).
 - Balance is bot-measured; Shades and early bosses cause most losses.
 - Projectiles in flight are dropped when saving mid-wave.
@@ -34,6 +36,7 @@ Deferred items found while building; none block play.
 - The "Next" wave strip and the hero card are tappable divs, not buttons, so they are not reachable by keyboard.
 
 ## New pocket games
+- Odd Crown, Pocket Planets and Reef Relay reach More tips only through the link on the How to play guide's last card; they have no menu to hold a separate entry.
 - Play Odd Crown on a real phone for longer sessions; tune opponent pacing from human feedback.
 - Verify all three new games in iPhone Safari standalone: physical safe areas, touch accuracy, battery use and frame rate.
 
@@ -41,6 +44,8 @@ Deferred items found while building; none block play.
 - Balance is bot-measured (a clumsy bot finishes all six ages in about 2,300 to 6,000 in-game days); human pacing is a guess.
 - No music or ambient sound, only the shared effect presets.
 - Cloud shadows are hard-edged.
+- Escape closes an open dialog (the How to play guide included) and also cancels the build tool underneath; WASD and Q/E move the camera behind dialogs.
+- A first run shows three screens before play: title, the "A new valley" card, then the guide. The welcome card could fold into the guide.
 
 ## Lanternfall (mystery visual novel)
 - The test bot learns the motive in about 79% of runs (the check was lowered from 90% to 75%); may need easing if it feels stingy.
@@ -51,3 +56,4 @@ Deferred items found while building; none block play.
 - Get-togethers need 2 hours and are easy to miss late in the campaign; consider a nudge.
 - Mini-games sit in the middle of tall screens with empty space above.
 - Only day one was played by hand through the UI; days 2 to 15 were fast-forwarded through the rules.
+- How to play is only in the in-game home menu, not on the title screen. A save already past day 1 never shows the guide automatically.

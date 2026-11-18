@@ -13,6 +13,7 @@ import { createRenderer } from './render.js';
 import { solidAt } from './world.js';
 import { createUI } from './ui.js';
 import { createInput } from './input.js';
+import { showGuide, showMoreTips } from './guide.js';
 
 function makeSfx(audio) {
   const last = new Map();
@@ -147,16 +148,30 @@ export default {
       if (!parsed) { const s = randomSeed(); parsed = { seed: s, label: String(s) }; }
       meta.lastSeedInput = seedText || '';
       const r = newRun(parsed.seed, classId, parsed.label);
+      // First new run ever: the guide first, then the floor (and its first-run button labels).
       if (!meta.seenHowTo) {
         meta.seenHowTo = true;
         saveMeta();
-        pendingRun = r;
-        U.showHowTo('howstart', r.classId);
+        openHowTo(r.classId, 'Descend', () => beginRun(r));
         return;
       }
       beginRun(r);
     }
-    let pendingRun = null;
+
+    // How to play: the shared guide over whatever screen is open (title, new run or pause menu).
+    let guide = null, disposed = false;
+    function openHowTo(classId, doneLabel, then) {
+      guide?.close();
+      guide = showGuide(ctx.root, {
+        classId, doneLabel,
+        onClose: () => { guide = null; if (!disposed && then) then(); },
+      });
+    }
+    // More tips on their own, through the same slot so dispose and the pause menu treat it alike.
+    function openMoreTips(classId) {
+      guide?.close();
+      guide = showMoreTips(ctx.root, { classId, onClose: () => { guide = null; } });
+    }
 
     function descend() {
       mergeFloorLog(meta, G);
@@ -229,8 +244,8 @@ export default {
       seeddaily: () => U.setSeedValue(dailySeedLabel()),
       start: () => startNew(selClass, U.seedValue()),
       records: () => U.showRecords(meta),
-      howto: () => U.showHowTo(mode === 'play' ? 'pause' : 'back', mode === 'play' && run ? run.classId : selClass),
-      howstart: () => { const r = pendingRun; pendingRun = null; if (r) beginRun(r); else showTitle(); },
+      howto: () => openHowTo(mode === 'play' && run ? run.classId : selClass, 'Got it'),
+      moretips: () => openMoreTips(mode === 'play' && run ? run.classId : selClass),
       back: () => showTitle(),
       title: () => showTitle(),
       exit: () => { saveRun(); ctx.exit(); },
@@ -322,6 +337,8 @@ export default {
 
     return {
       dispose() {
+        disposed = true;
+        guide?.close();
         saveRun();
         document.removeEventListener('visibilitychange', onVis);
         window.removeEventListener('pagehide', onHide);

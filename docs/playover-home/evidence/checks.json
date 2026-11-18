@@ -1,0 +1,666 @@
+{
+  "base": "http://127.0.0.1:5328/",
+  "results": [
+    {
+      "name": "layout 375×667",
+      "detail": {
+        "width": 375,
+        "height": 667,
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "scrollHeight": 667,
+        "clientHeight": 667,
+        "count": 9,
+        "nested": 0,
+        "targets": [
+          {
+            "id": "home-sound",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "play-everbrook",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-everbrook",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-lanternfall",
+            "width": 107.671875,
+            "height": 104
+          },
+          {
+            "id": "info-lanternfall",
+            "width": 107.671875,
+            "height": 56
+          },
+          {
+            "id": "play-helpdesk",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-helpdesk",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-oddcrown",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-oddcrown",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-planets",
+            "width": 107.671875,
+            "height": 104
+          },
+          {
+            "id": "info-planets",
+            "width": 107.671875,
+            "height": 56
+          },
+          {
+            "id": "play-reef",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-reef",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-builder",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-builder",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-roguelike",
+            "width": 107.671875,
+            "height": 104
+          },
+          {
+            "id": "info-roguelike",
+            "width": 107.671875,
+            "height": 56
+          },
+          {
+            "id": "play-towerdefence",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-towerdefence",
+            "width": 107.65625,
+            "height": 56
+          }
+        ]
+      }
+    },
+    {
+      "name": "layout 390×844",
+      "detail": {
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "clientHeight": 844,
+        "count": 9,
+        "nested": 0,
+        "targets": [
+          {
+            "id": "home-sound",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "play-everbrook",
+            "width": 112.65625,
+            "height": 108.8125
+          },
+          {
+            "id": "info-everbrook",
+            "width": 112.65625,
+            "height": 56
+          },
+          {
+            "id": "play-lanternfall",
+            "width": 112.671875,
+            "height": 108.828125
+          },
+          {
+            "id": "info-lanternfall",
+            "width": 112.671875,
+            "height": 56
+          },
+          {
+            "id": "play-helpdesk",
+            "width": 112.65625,
+            "height": 108.8125
+          },
+          {
+            "id": "info-helpdesk",
+            "width": 112.65625,
+            "height": 56
+          },
+          {
+            "id": "play-oddcrown",
+            "width": 112.65625,
+            "height": 108.8125
+          },
+          {
+            "id": "info-oddcrown",
+            "width": 112.65625,
+            "height": 56
+          },
+          {
+            "id": "play-planets",
+            "width": 112.671875,
+            "height": 108.828125
+          },
+          {
+            "id": "info-planets",
+            "width": 112.671875,
+            "height": 56
+          },
+          {
+            "id": "play-reef",
+            "width": 112.65625,
+            "height": 108.8125
+          },
+          {
+            "id": "info-reef",
+            "width": 112.65625,
+            "height": 56
+          },
+          {
+            "id": "play-builder",
+            "width": 112.65625,
+            "height": 108.8125
+          },
+          {
+            "id": "info-builder",
+            "width": 112.65625,
+            "height": 56
+          },
+          {
+            "id": "play-roguelike",
+            "width": 112.671875,
+            "height": 108.828125
+          },
+          {
+            "id": "info-roguelike",
+            "width": 112.671875,
+            "height": 56
+          },
+          {
+            "id": "play-towerdefence",
+            "width": 112.65625,
+            "height": 108.8125
+          },
+          {
+            "id": "info-towerdefence",
+            "width": 112.65625,
+            "height": 56
+          }
+        ]
+      }
+    },
+    {
+      "name": "layout 430×932",
+      "detail": {
+        "width": 430,
+        "height": 932,
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "scrollHeight": 932,
+        "clientHeight": 932,
+        "count": 9,
+        "nested": 0,
+        "targets": [
+          {
+            "id": "home-sound",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "play-everbrook",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-everbrook",
+            "width": 126,
+            "height": 56
+          },
+          {
+            "id": "play-lanternfall",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-lanternfall",
+            "width": 126,
+            "height": 56
+          },
+          {
+            "id": "play-helpdesk",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-helpdesk",
+            "width": 126,
+            "height": 56
+          },
+          {
+            "id": "play-oddcrown",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-oddcrown",
+            "width": 126,
+            "height": 56
+          },
+          {
+            "id": "play-planets",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-planets",
+            "width": 126,
+            "height": 56
+          },
+          {
+            "id": "play-reef",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-reef",
+            "width": 126,
+            "height": 56
+          },
+          {
+            "id": "play-builder",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-builder",
+            "width": 126,
+            "height": 56
+          },
+          {
+            "id": "play-roguelike",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-roguelike",
+            "width": 126,
+            "height": 56
+          },
+          {
+            "id": "play-towerdefence",
+            "width": 126,
+            "height": 121.703125
+          },
+          {
+            "id": "info-towerdefence",
+            "width": 126,
+            "height": 56
+          }
+        ]
+      }
+    },
+    {
+      "name": "layout 375×500",
+      "detail": {
+        "width": 375,
+        "height": 500,
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "scrollHeight": 660,
+        "clientHeight": 500,
+        "count": 9,
+        "nested": 0,
+        "targets": [
+          {
+            "id": "home-sound",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "play-everbrook",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-everbrook",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-lanternfall",
+            "width": 107.671875,
+            "height": 104
+          },
+          {
+            "id": "info-lanternfall",
+            "width": 107.671875,
+            "height": 56
+          },
+          {
+            "id": "play-helpdesk",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-helpdesk",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-oddcrown",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-oddcrown",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-planets",
+            "width": 107.671875,
+            "height": 104
+          },
+          {
+            "id": "info-planets",
+            "width": 107.671875,
+            "height": 56
+          },
+          {
+            "id": "play-reef",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-reef",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-builder",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-builder",
+            "width": 107.65625,
+            "height": 56
+          },
+          {
+            "id": "play-roguelike",
+            "width": 107.671875,
+            "height": 104
+          },
+          {
+            "id": "info-roguelike",
+            "width": 107.671875,
+            "height": 56
+          },
+          {
+            "id": "play-towerdefence",
+            "width": 107.65625,
+            "height": 103.984375
+          },
+          {
+            "id": "info-towerdefence",
+            "width": 107.65625,
+            "height": 56
+          }
+        ]
+      }
+    },
+    {
+      "name": "layout 1280×900",
+      "detail": {
+        "width": 1280,
+        "height": 900,
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "scrollHeight": 949,
+        "clientHeight": 900,
+        "count": 9,
+        "nested": 0,
+        "targets": [
+          {
+            "id": "home-sound",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "play-everbrook",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-everbrook",
+            "width": 184,
+            "height": 64
+          },
+          {
+            "id": "play-lanternfall",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-lanternfall",
+            "width": 184,
+            "height": 64
+          },
+          {
+            "id": "play-helpdesk",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-helpdesk",
+            "width": 184,
+            "height": 64
+          },
+          {
+            "id": "play-oddcrown",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-oddcrown",
+            "width": 184,
+            "height": 64
+          },
+          {
+            "id": "play-planets",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-planets",
+            "width": 184,
+            "height": 64
+          },
+          {
+            "id": "play-reef",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-reef",
+            "width": 184,
+            "height": 64
+          },
+          {
+            "id": "play-builder",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-builder",
+            "width": 184,
+            "height": 64
+          },
+          {
+            "id": "play-roguelike",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-roguelike",
+            "width": 184,
+            "height": 64
+          },
+          {
+            "id": "play-towerdefence",
+            "width": 184,
+            "height": 177.71875
+          },
+          {
+            "id": "info-towerdefence",
+            "width": 184,
+            "height": 64
+          }
+        ]
+      }
+    },
+    {
+      "name": "safe areas counted once",
+      "detail": {
+        "top": "47px",
+        "bottom": "34px"
+      }
+    },
+    {
+      "name": "200% text naturally scrolls",
+      "detail": {
+        "width": 375,
+        "clientWidth": 375,
+        "height": 913,
+        "clientHeight": 667,
+        "clipped": false
+      }
+    },
+    {
+      "name": "sound state persists across reload"
+    },
+    {
+      "name": "everbrook: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "everbrook: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "everbrook: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "lanternfall: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "lanternfall: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "lanternfall: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "helpdesk: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "helpdesk: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "helpdesk: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "oddcrown: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "oddcrown: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "oddcrown: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "planets: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "planets: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "planets: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "reef: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "reef: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "reef: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "builder: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "builder: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "builder: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "roguelike: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "roguelike: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "roguelike: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "towerdefence: guide close/finish, keyboard/swipe, saves unchanged"
+    },
+    {
+      "name": "towerdefence: More tips and return to main guide/sheet"
+    },
+    {
+      "name": "towerdefence: artwork and sheet Play open game, Back restores focus"
+    },
+    {
+      "name": "direct game link exits to Home"
+    },
+    {
+      "name": "guide respects reduced motion"
+    },
+    {
+      "name": "no runtime errors or external requests"
+    }
+  ],
+  "errors": []
+}

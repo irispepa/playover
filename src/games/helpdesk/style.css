@@ -143,6 +143,7 @@
 .pk-rewards { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
 .pk-actions { display: flex; gap: 8px; margin-top: 10px; }
 .pk-actions .pk-btn { flex: 1; }
+.pk-trio .pk-btn { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 2px; padding: 8px 4px; font-size: 14px; white-space: nowrap; }
 
 /* ---------- mini-game frame ---------- */
 .pk-mg { position: absolute; inset: 0; z-index: 12; background: var(--cream); display: flex; flex-direction: column; animation: pk-fade 0.25s; }
@@ -366,3 +367,16 @@ svg .pk-pulse, svg .pk-shake { transform-box: fill-box; transform-origin: center
 
 .pk-scene { text-align: left; }
 .pk .pk-btn .pk-cost { color: var(--ink); text-shadow: none; }
+
+/* ---------- How to play (shared shell guide, themed) ---------- */
+.fg-guide.pk-guide { --g-bg: #fffaf0; --g-panel: #fff6e4; --g-ink: #4b3a33; --g-muted: #8a766c; --g-line: #f0dfc4; --g-accent: #f6a81c; --g-on-accent: #fff;
+  --g-art-bg: #fff6e4; --g-font: 'PK Body', var(--font); --g-title-font: 'PK Round', 'PK Body', sans-serif; }
+.fg-guide.pk-guide::backdrop { background: rgba(75, 58, 51, 0.42); }
+.pk-guide .fg-title { font-weight: 700; }
+.pk-guide .fg-points li { font-weight: 700; }
+.pk-guide .fg-next { box-shadow: 0 4px 0 #d98200; text-shadow: 0 1px 0 rgba(120, 70, 0, 0.35); font-weight: 900; }
+.pk-guide .fg-back { box-shadow: 0 4px 0 #f0dfc4; }
+.pk-guide .fg-nav button:active { transform: translateY(3px) scale(0.98); }
+.pk-guide .fg-skip { color: var(--g-muted); }
+.fg-guide.pk-guide .fg-more { color: #b36b00; font-weight: 800; }
+.pk-guide .fg-title { margin: 4px 0 0; }
