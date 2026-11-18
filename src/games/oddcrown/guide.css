@@ -1,0 +1,8 @@
+/* Odd Crown theme for the shared How to play guide (matches .arc-crown). */
+.fg-guide.oddcrown-guide {
+  --g-bg: #202b40; --g-panel: #2b3850; --g-ink: #eef4f3; --g-muted: #b4c0d6; --g-line: #4a5872;
+  --g-accent: #e9c78d; --g-on-accent: #202b40; --g-art-bg: #182235;
+  --g-font: var(--font); --g-title-font: Georgia, 'Times New Roman', serif;
+}
+.oddcrown-guide .fg-title { font-weight: normal; font-size: 27px; letter-spacing: -.5px; }
+@media (max-height: 700px) { .oddcrown-guide .fg-title { font-size: 23px; } }

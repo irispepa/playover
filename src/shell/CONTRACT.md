@@ -20,6 +20,9 @@ Shared helpers:
 - `src/shell/stage.js` — `createStage(root)` gives renderer, scene, camera, an HTML overlay `ui`,
   `onFrame(fn(dt, elapsed))`, `onResize(fn(w, h))`, `setCamera(cam)`, `dispose()`.
 - `src/shell/rng.js` — `makeRng(seed)` (next, float, int, chance, pick, shuffle, weighted), `randomSeed()`.
+- `src/shell/guide.js` — `openGuide(root, { pages, className, doneLabel, onClose })`: the shared How to play
+  cards (swipe, dots, Back/Next, Skip). 3–5 cards, a code-drawn SVG and 1–2 short points each; theme with `--g-*`
+  variables on your `className`. Show once on the first new game (a `guideSeen` flag), reopen from help, close in `dispose()`.
 - `src/shell/shell.css` — CSS variables: `--bg --panel --panel-2 --line --text --muted --accent --good --bad`,
   safe-area insets `--sat --sab --sal --sar`, `--font`.
 - `scripts/pup.mjs` — headless Chrome at phone size for play-testing (`openGame({ port, game })`).

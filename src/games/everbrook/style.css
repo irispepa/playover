@@ -190,3 +190,12 @@
 @media (max-height: 640px) { .eb-side { top: calc(var(--sat) + 160px); gap: 5px; } .eb-item { height: 96px; } }
 
 .eb .eb-acts .eb-btn.ghost, .eb .eb-acts .eb-btn.warn { flex-direction: row; gap: 6px; flex: 0 1 auto; }
+
+/* ---- How to play guide (shared component, themed to the valley) ---- */
+.fg-guide.eb-guide { --g-bg: #fbf3e1; --g-panel: #f3e6c9; --g-ink: #3b2c1c; --g-muted: #7a6549; --g-line: #dcc79d;
+  --g-accent: #9c7440; --g-on-accent: #fff; --g-art-bg: #8fd162;
+  --g-font: 'EB Nunito', var(--font); --g-title-font: 'EB Fraunces', Georgia, serif;
+  border-width: 1.5px; box-shadow: 0 24px 60px rgba(60, 40, 10, 0.35); }
+.fg-guide.eb-guide::backdrop { background: rgba(40, 28, 12, 0.5); }
+.eb-guide .fg-title { font-weight: 650; }
+.eb-guide .fg-next { font-weight: 900; }

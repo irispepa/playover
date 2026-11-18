@@ -35,7 +35,7 @@ Six games are on `main`. Tidewater, Deepvault and Bastion Maze have the polished
 - **Dev handles:** `window.__dv` (Deepvault) and `window.__bm` (Bastion Maze), dev builds only.
 
 ## Next steps
-1. **Later: polish the How to play and instructions of Codex's three games** (`src/games/oddcrown/`, `src/games/planets/`, `src/games/reef/`) to the standard in `docs/plans/ui-polish.md`.
+1. **Done 2026-11-17 (`claude/playover-missing-tutorials-ca78d7`): all six newer games now have short How to play guides on the shared `src/shell/guide.js`; see `docs/history.md` session 3.** Original note: polish the How to play and instructions of Codex's three games (`src/games/oddcrown/`, `src/games/planets/`, `src/games/reef/`) to the standard in `docs/plans/ui-polish.md`.
    - **The standard:** paged guides, one topic per page, a picture drawn in code, 2–4 short points (about 20 words at most), page dots, Back/Next, Skip and swipe. Every fact is checked against the game's `sim.js`. Add first-run pointers only where they help.
    - **Worked examples to copy from:**
      - [src/games/builder/help.js](src/games/builder/help.js): Tidewater's pages and SVG pictures. The paging, swipe and first-run coach marks live in [src/games/builder/ui.js](src/games/builder/ui.js) (`helpGo`, `startCoach`).

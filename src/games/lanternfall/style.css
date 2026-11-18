@@ -241,3 +241,12 @@
 
 @media (max-height: 700px) { .lf-char { bottom: calc(var(--sab) + 130px); width: min(56vw, 34vh); } .lf-box { min-height: 136px; font-size: 15.5px; } .lf-logo h1 { font-size: 50px; } }
 @media (min-width: 760px) { .lf-char { width: min(46vh, 380px); } .lf-box { font-size: 18px; } }
+
+/* How to play guide (shared component, themed) */
+.fg-guide.lf-guide { --g-bg: #231c4a; --g-panel: #3a2a60; --g-ink: #f7ecd8; --g-muted: #b9b0d4; --g-line: #4b3f7a; --g-accent: #f6c56b; --g-on-accent: #3a2410;
+  --g-font: 'LF Sans', var(--font, system-ui, sans-serif); --g-title-font: 'LF Serif', Georgia, serif; --g-art-bg: #17133a;
+  box-shadow: 0 30px 90px #0008, inset 0 0 0 1.5px rgba(246, 197, 107, 0.25); }
+.lf-guide .fg-title { font-weight: 600; font-size: 29px; letter-spacing: 0.005em; }
+.lf-guide .fg-next { font-weight: 800; }
+@media (max-height: 700px) { .lf-guide .fg-title { font-size: 25px; } }
+.lf-guide .fg-art svg { overflow: visible; }

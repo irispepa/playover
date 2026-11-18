@@ -9,6 +9,7 @@ import { portrait, kettleSvg, EXTRA_LOOKS } from './art.js';
 import { houseSvg, kettlePoint, HOUSE_W, HOUSE_H } from './house.js';
 import { makeFx } from './fx.js';
 import { makeMusic } from './music.js';
+import { showGuide } from './guide.js';
 import mountCables from './games/cables.js';
 import { mountWifi, mountPrinter, mountReboot } from './games/hardware.js';
 import { mountPassword, mountInbox, mountDiagnosis, mountVideocall } from './games/people.js';
@@ -29,13 +30,18 @@ export function createApp(ctx) {
   const music = makeMusic({ isMuted: () => ctx.audio.isMuted() || !settings.music });
   const book = { runs: 0, best: 0, titles: {}, decor: {}, gifts: {}, hats: {}, threads: {}, events: {}, ...(store.get('book', {}) || {}) };
   let s = S.deserialize(store.get('save', null));
-  let happy = new Set(), hubEls = null, sheets = 0;
+  let happy = new Set(), hubEls = null, sheets = 0, guide = null;
 
   const tap = (node, fn) => { scope.on(node, 'click', (e) => { e.stopPropagation(); fn(e); }); return node; };
   const btn = (cls, html, fn, sound = 'tap') => tap(el(`<button class="${cls}">${html}</button>`), () => { fx.sfx(sound); fn(); });
   const face = (id, size = 48, expr = 'smile') => portrait(TENANT_BY_ID[id].look, { size, expr, bg: '#ffe9b8' });
   const dayLabel = () => (s.day > S.CAMPAIGN_DAYS ? `Day ${s.day} · free play` : `Day ${s.day} · ${DAY_NAMES[(s.day - 1) % 5].slice(0, 3)}`);
   const startMusic = () => { if (settings.music && !ctx.audio.isMuted()) music.start(); };
+  function howToPlay() {
+    if (guide && guide.open) return;
+    store.set('guideSeen', true);
+    guide = showGuide(root, () => { guide = null; });
+  }
 
   function save() {
     if (!s) return;
@@ -541,7 +547,8 @@ export function createApp(ctx) {
     for (const t of TYPE_IDS) if (TYPES[t].unlock === s.day && s.day > 1) line('sparkle', `A new kind of problem today: ${esc(TYPES[t].name.toLowerCase())}.`);
     line('tickets', rep.newTickets.length ? `${plural(rep.newTickets.length, 'new ticket')} on the board, and ${plural(rep.hours, 'hour')} to spend.` : `No new tickets at all. ${plural(rep.hours, 'hour')} to spend however you like.`);
     card.append(l);
-    const go = btn('pk-btn wide', 'Put the kettle on', hub, 'pop');
+    const firstDay = s.day === 1;
+    const go = btn('pk-btn wide', 'Put the kettle on', () => { hub(); if (firstDay && !store.get('guideSeen', false)) howToPlay(); }, 'pop');
     go.style.marginTop = '8px';
     card.append(go);
     main.append(card);
@@ -578,9 +585,10 @@ export function createApp(ctx) {
     const sh = sheet({ title: 'Marigold House', sub: s ? dayLabel() : '', mid: true });
     const tog = (label, key) => { const b = btn('pk-btn alt wide', '', () => { settings[key] = !settings[key]; store.set('settings', settings); if (key === 'music') { if (settings.music) startMusic(); else music.stop(); } draw(); }); const draw = () => { b.innerHTML = `${icon(settings[key] ? 'sound' : 'mute', 20)} ${label}: ${settings[key] ? 'on' : 'off'}`; }; draw(); b.style.marginBottom = '8px'; return b; };
     sh.body.append(tog('Music box', 'music'), tog('Sounds', 'sfx'));
+    const hp = btn('pk-btn alt wide', `${icon('question', 20)} How to play`, () => { sh.close(); howToPlay(); }); hp.style.marginBottom = '8px';
     const sb = btn('pk-btn alt wide', `${icon('book', 20)} Scrapbook`, () => { sh.close(); scrapbook(); }); sb.style.marginBottom = '8px';
     const tt = btn('pk-btn alt wide', `${icon('door', 20)} Back to the title`, () => { sh.close(); save(); title(); });
-    sh.body.append(sb, tt);
+    sh.body.append(hp, sb, tt);
   }
   function scrapbook() {
     const sh = sheet({ title: 'Scrapbook', sub: `${plural(book.runs, 'Open Day')} so far${book.best ? ` · best ${book.best} points` : ''}` });
@@ -640,6 +648,7 @@ export function createApp(ctx) {
   return {
     dispose() {
       save();
+      if (guide) guide.close();
       music.dispose();
       scope.dispose();
       root.remove();

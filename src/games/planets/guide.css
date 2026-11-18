@@ -1,0 +1,6 @@
+.fg-guide.planets-guide {
+  --g-bg: #171d39; --g-panel: #252d50; --g-ink: #eef4f3; --g-muted: #adb7dd; --g-line: #485580;
+  --g-accent: #e2b5fb; --g-on-accent: #171d39; --g-art-bg: #171d39;
+  --g-font: var(--font); --g-title-font: var(--font);
+}
+.fg-guide.planets-guide .fg-title { font-weight: 750; letter-spacing: -.6px; }

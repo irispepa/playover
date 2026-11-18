@@ -29,7 +29,7 @@ export default {
       keyOf: (b) => modelKey(b),
       exit: () => { save(); ctx.exit(); },
     };
-    const ui = createUI(stage, g);
+    const ui = createUI(stage, g, ctx.root);
 
     // ---------- persistence ----------
     function save() {
@@ -58,7 +58,8 @@ export default {
       enter(s);
       view.controls.focus(s.m.start.x, s.m.start.y, 15);
       save();
-      ui.openEra(0);
+      // The first valley ever: the guide follows the welcome card, once.
+      ui.openEra(0, () => { if (!store.get('guideSeen', false)) { store.set('guideSeen', true); ui.openHelp(true); } });
     };
     g.setSpeed = (n) => { g.speed = n; };
 
