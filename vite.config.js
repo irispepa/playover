@@ -8,14 +8,13 @@ export default defineConfig({
   server: process.env.NO_HMR ? { hmr: false, watch: null } : {},
   plugins: [
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': a new version waits until the player is on the menu (see src/main.js), so it never reloads mid-game.
+      registerType: 'prompt',
       includeAssets: ['icon-180.png', 'icon-192.png', 'icon-512.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,jpg,jpeg,webp,avif,svg,woff2,json,glb,mp3,ogg,m4a}'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
       },
       manifest: {
         name: 'Flight Games',

@@ -39,7 +39,8 @@ Rules:
 - Autosave to `storage` so a run survives the app being closed; offer New game when a save exists.
 - Seed all generation with `makeRng`; a new run uses `randomSeed()`.
 - `dispose()` must remove every listener, timer and DOM node the game added (and call `stage.dispose()` if used).
-- Keep it 60 fps on a phone: use InstancedMesh for repeated things, cap pixel ratio (the stage does).
+- Keep it 60 fps on a phone: use InstancedMesh for repeated things, cap pixel ratio (the stage does, at 1.5x).
+  To save battery the stage drops to 30 fps after 2 s without input, so drive animation from `dt`, not frame counts.
 - Scope a game's CSS with a unique class prefix; import the CSS from the game's index.js.
 - Keep game rules in pure modules (no DOM) with a headless `sim.test.mjs` that plays the game with a bot.
 - Only touch files inside your own `src/games/<id>/` folder.

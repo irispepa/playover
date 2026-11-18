@@ -8,7 +8,29 @@ let offlineReady = false;
 let updateOfflineStatus = () => {};
 window.addEventListener('online', () => updateOfflineStatus());
 window.addEventListener('offline', () => updateOfflineStatus());
-registerSW({ immediate: true, onOfflineReady() { offlineReady = true; updateOfflineStatus(); } });
+// A new version installs in the background and is applied (one reload) only when the player is on the menu.
+const UPDATE_CHECK_MS = 30 * 60 * 1000;
+let updatePending = false;
+let inGame = false;
+const updateSW = registerSW({
+  immediate: true,
+  onOfflineReady() { offlineReady = true; updateOfflineStatus(); },
+  onNeedRefresh() { updatePending = true; if (!inGame) applyUpdate(); },
+  // iOS often resumes a suspended home-screen app instead of relaunching it, which skips the load-time
+  // update check. Check again on return to the foreground, at most every 30 minutes.
+  onRegisteredSW(_url, reg) {
+    if (!reg) return;
+    let lastCheck = Date.now();
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !navigator.onLine || Date.now() - lastCheck < UPDATE_CHECK_MS) return;
+      lastCheck = Date.now();
+      reg.update().catch(() => {});
+    });
+  },
+});
+function applyUpdate() { if (updatePending) { updatePending = false; updateSW(true); } }
+// Ask the browser not to evict saved games under storage pressure (granted silently or ignored).
+if (navigator.storage?.persist) navigator.storage.persisted().then((p) => p || navigator.storage.persist()).catch(() => {});
 if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(() => { offlineReady = true; updateOfflineStatus(); });
 
 // Each game is a lazily loaded module whose default export is
@@ -53,6 +75,7 @@ function el(tag, cls, text) {
 
 function showMenu() {
   if (current) { try { current.dispose(); } catch (err) { console.error(err); } current = null; }
+  inGame = false;
   app.replaceChildren();
   const menu = el('div', 'menu');
   const header = el('header', 'menu-head');
@@ -88,9 +111,11 @@ function showMenu() {
   menu.append(foot);
   menu.append(el('div', 'menu-note', 'No timers in the new puzzles. Progress saves as you play.'));
   app.append(menu);
+  applyUpdate();
 }
 
 async function launch(game) {
+  inGame = true;
   app.replaceChildren();
   const root = el('div', 'game-root');
   const loading = el('div', 'load-msg', 'Loading…');

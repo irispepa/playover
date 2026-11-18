@@ -4,7 +4,27 @@
 //    by default — set pointer-events: auto on the buttons/panels you add).
 //  - onFrame(fn): fn(dt, elapsed) each animation frame; dt is seconds, clamped to 0.1.
 //  - The loop pauses while the page is hidden.
+//  - Battery: frames are capped at 60 fps while the player is touching or typing and for IDLE_MS after,
+//    then at 30 fps. dt is measured between rendered frames, so game timing is unaffected.
 import * as THREE from 'three';
+
+const ACTIVE_FPS = 60;
+const IDLE_FPS = 30;
+const IDLE_MS = 2000;
+// Render when at least 90% of the target interval has passed, so normal vsync jitter doesn't drop frames.
+const ACTIVE_GAP = 900 / ACTIVE_FPS;
+const IDLE_GAP = 900 / IDLE_FPS;
+
+let lastInput = performance.now();
+let inputListening = false;
+function listenForInput() {
+  if (inputListening) return;
+  inputListening = true;
+  const mark = () => { lastInput = performance.now(); };
+  for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'touchstart', 'touchmove']) {
+    window.addEventListener(type, mark, { passive: true, capture: true });
+  }
+}
 
 export function createStage(root, { antialias = true, background = 0x0e1420 } = {}) {
   const canvas = document.createElement('canvas');
@@ -14,8 +34,10 @@ export function createStage(root, { antialias = true, background = 0x0e1420 } = 
   ui.className = 'stage-ui';
   root.appendChild(ui);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  listenForInput();
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias });
+  // 1.5x is hard to tell from 2-3x on a phone and cuts the pixels drawn per frame by half or more.
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(background);
   let camera = new THREE.PerspectiveCamera(50, 1, 0.1, 500);
@@ -39,9 +61,11 @@ export function createStage(root, { antialias = true, background = 0x0e1420 } = 
   function tick(now) {
     if (disposed) return;
     raf = requestAnimationFrame(tick);
+    if (document.hidden) { last = now; return; }
+    const gap = now - lastInput < IDLE_MS ? ACTIVE_GAP : IDLE_GAP;
+    if (now - last < gap) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
-    if (document.hidden) return;
     elapsed += dt;
     frameFns.forEach((fn) => fn(dt, elapsed));
     renderer.render(scene, camera);
