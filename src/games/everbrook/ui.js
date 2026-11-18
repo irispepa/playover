@@ -3,8 +3,8 @@ import { ICON, CAT_ICON } from './icons.js';
 import { B, CATS, RES, RES_KEYS, ERAS, SERVICES, HOME_LEVELS, DISC, DISC_BY_ID, SEASONS, DAYS_PER_SEASON, PRICES, QUESTS } from './data.js';
 import * as S from './sim.js';
 import { idx } from './gen.js';
-import { openGuide } from '../../shell/guide.js';
-import { guidePages } from './howto.js';
+import { openGuide, MORE_LABEL } from '../../shell/guide.js';
+import { guidePages, morePages } from './howto.js';
 
 export function el(tag, cls, html) {
   const n = document.createElement(tag);
@@ -472,16 +472,16 @@ export function createUI(stage, g, host) {
       button: 'Keep tending the town' });
   }
 
-  // The How to play guide. `first` is the automatic showing at the start of the first valley.
-  function openHelp(first = false) {
+  // The How to play guide, with the More tips cards after it. `first` is the automatic showing at the
+  // start of the first valley; `tipsOnly` opens the More tips cards on their own (from the menu).
+  function openHelp(first = false, tipsOnly = false) {
     if (guide) return;
     if (popEl) { popEl.remove(); popEl = null; }
-    guide = openGuide(host, {
-      className: 'eb-guide',
-      pages: guidePages(g.thumb),
-      doneLabel: first ? 'Settle the valley' : 'Back to the valley',
-      onClose: () => { guide = null; if (root.isConnected) hud(); },
-    });
+    const more = morePages(g.thumb);
+    const onClose = () => { guide = null; if (root.isConnected) hud(); };
+    guide = tipsOnly
+      ? openGuide(host, { className: 'eb-guide', pages: more, label: MORE_LABEL, doneLabel: 'Got it', onClose })
+      : openGuide(host, { className: 'eb-guide', pages: guidePages(g.thumb), more, doneLabel: first ? 'Settle the valley' : 'Back to the valley', onClose });
   }
 
   function openMenu() {
@@ -489,6 +489,7 @@ export function createUI(stage, g, host) {
       const add = (label, sub, fn, cls = '') => b.append(opt(cls, `<div class="txt"><b>${label}</b><span>${sub}</span></div>`, fn));
       add('Back to the valley', 'The town is saved as you go.', () => { g.tap(); m.close(); }, 'can');
       add('How to play', 'A short guide.', () => { g.tap(); m.close(); openHelp(); });
+      add(MORE_LABEL, 'Paths, festivals, wonders and keys.', () => { g.tap(); m.close(); openHelp(false, true); });
       const fresh = opt('', '<div class="txt"><b>Found a new valley</b><span>Start again somewhere else. This town will be lost.</span></div>', () => {
         if (!fresh.dataset.sure) { fresh.dataset.sure = 1; fresh.querySelector('b').textContent = 'Tap again to leave this town behind'; fresh.style.borderColor = 'var(--bad)'; return; }
         m.close(); g.newGame();

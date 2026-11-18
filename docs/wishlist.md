@@ -11,10 +11,11 @@ Deferred items found while building; none block play.
 - Several milestones often complete at once.
 - Harsh difficulty scores well above Standard.
 - Camera cannot rotate.
-- How to play opened from the pause menu closes back to the island, not to the pause menu.
 - The Royal Charter modal was restyled but only checked in code; a headless run cannot reach it quickly.
 
 ## Deepvault (roguelike)
+- On 320x568, a returning player's title screen (Continue plus stats) scrolls by about 9 px.
+- `ui.js` imports `BIOMES` but never uses it.
 - Boss floors, shops, inventory and three of four classes are covered by the headless test only, not seen on screen.
 - Palette is muted; enemies can be dark against the floor.
 - Loading a save starts at the floor entrance.
@@ -24,6 +25,7 @@ Deferred items found while building; none block play.
 - First-run button labels show on floor 1 of the first run only (meta.runs === 0); there is no way to bring them back.
 
 ## Bastion Maze (tower defence)
+- Towers reference tags wrap to two lines on 320-wide screens for some towers.
 - Tower models are separate meshes (a few hundred draw calls with 60+ towers).
 - Balance is bot-measured; Shades and early bosses cause most losses.
 - Projectiles in flight are dropped when saving mid-wave.
@@ -34,6 +36,7 @@ Deferred items found while building; none block play.
 - The "Next" wave strip and the hero card are tappable divs, not buttons, so they are not reachable by keyboard.
 
 ## New pocket games
+- Odd Crown, Pocket Planets and Reef Relay reach More tips only through the link on the How to play guide's last card; they have no menu to hold a separate entry.
 - Play Odd Crown on a real phone for longer sessions; tune opponent pacing from human feedback.
 - Verify all three new games in iPhone Safari standalone: physical safe areas, touch accuracy, battery use and frame rate.
 

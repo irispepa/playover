@@ -1,0 +1,77 @@
+{
+  "base": "http://127.0.0.1:5328/",
+  "results": [
+    {
+      "name": "complete production cache controls Home",
+      "detail": [
+        {
+          "name": "workbox-precache-v2-http://127.0.0.1:5328/",
+          "count": 56
+        }
+      ]
+    },
+    {
+      "name": "everbrook: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "everbrook: cold offline reload and launch"
+    },
+    {
+      "name": "lanternfall: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "lanternfall: cold offline reload and launch"
+    },
+    {
+      "name": "helpdesk: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "helpdesk: cold offline reload and launch"
+    },
+    {
+      "name": "oddcrown: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "oddcrown: cold offline reload and launch"
+    },
+    {
+      "name": "planets: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "planets: cold offline reload and launch"
+    },
+    {
+      "name": "reef: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "reef: cold offline reload and launch"
+    },
+    {
+      "name": "builder: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "builder: cold offline reload and launch"
+    },
+    {
+      "name": "roguelike: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "roguelike: cold offline reload and launch"
+    },
+    {
+      "name": "towerdefence: cold offline guide and More tips, saves unchanged"
+    },
+    {
+      "name": "towerdefence: cold offline reload and launch"
+    },
+    {
+      "name": "leaving during delayed import cannot start game"
+    },
+    {
+      "name": "failed chunk retry recovers and preserves return origin"
+    },
+    {
+      "name": "real game sound obeys global mute and existing save offers Continue"
+    }
+  ]
+}

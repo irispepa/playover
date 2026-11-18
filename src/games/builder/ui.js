@@ -7,7 +7,8 @@ import { resIcon, uiIcon } from './icons.js';
 import { cache, rates, prodPerMin, siteMult, canPlace, canAfford, radiusOf, reachOf, maxWorkers, isComplete, charterPop, forDisc, isWater } from './world.js';
 import { upgradeInfo, goalProgress, currentGoal, needsUnmet, happyBreakdown, dayOf, repairCost, dwellingHappy } from './sim.js';
 import { islandName } from './gen.js';
-import { HELP } from './help.js';
+import { openGuide, MORE_LABEL } from '../../shell/guide.js';
+import { guidePages, morePages } from './guide.js';
 
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export function fmt(n) {
@@ -35,7 +36,8 @@ const STATUS_TEXT = {
   needs: ['bad', 'Needs not met'], warn: ['warn', 'A need has lapsed'],
 };
 
-export function createUI(host, game) {
+// `host` is the HUD layer; `guideHost` is the game root, where the guide dialog lives (the HUD ignores pointer events).
+export function createUI(host, game, guideHost) {
   const root = document.createElement('div');
   root.className = 'tw';
   root.innerHTML = `
@@ -408,7 +410,7 @@ export function createUI(host, game) {
       const focused = document.activeElement && document.activeElement.classList.contains('tw-input');
       if (focused && !force) return;
       mbox.innerHTML = html; lastModal = html;
-      mbox.scrollTop = modal.kind === 'help' ? 0 : st;
+      mbox.scrollTop = st;
     }
   }
   function modalHTML() {
@@ -425,6 +427,7 @@ export function createUI(host, game) {
           ${sv ? `<button class="tw-btn primary" data-a="continue">${uiIcon('play')} Continue</button>` : ''}
           <button class="tw-btn ${sv ? '' : 'primary'}" data-a="newIsland">New island</button>
           <button class="tw-btn" data-a="m-help">How to play</button>
+          <button class="tw-btn" data-a="m-tips">${MORE_LABEL}</button>
           <button class="tw-btn quiet" data-a="backMenu">Back to menu</button>
         </div>
         ${top ? `<div class="tw-best">Best charter: <b>${top.score}</b> · ${esc(top.name)}, ${esc(DIFFICULTY[top.diff].name)}</div>` : ''}`;
@@ -452,6 +455,7 @@ export function createUI(host, game) {
           <button class="tw-btn primary" data-a="resume">${uiIcon('play')} Resume</button>
           <button class="tw-btn" data-a="m-goals">${uiIcon('scroll')} Goals and chronicle</button>
           <button class="tw-btn" data-a="m-help">${uiIcon('info')} How to play</button>
+          <button class="tw-btn" data-a="m-tips">${uiIcon('star')} ${MORE_LABEL}</button>
           <button class="tw-btn" data-a="m-new">New island</button>
           <button class="tw-btn quiet" data-a="m-exit">Save and exit to menu</button>
         </div>`;
@@ -459,22 +463,6 @@ export function createUI(host, game) {
     if (k === 'confirmNew') {
       return `<h2>Leave this island?</h2><p>Starting a new island replaces your saved game on ${esc(s.name)}.</p>
         <div class="tw-col"><button class="tw-btn danger" data-a="newIsland">Yes, find a new island</button><button class="tw-btn" data-a="closeModal">Keep playing</button></div>`;
-    }
-    if (k === 'help') {
-      const p = Math.max(0, Math.min(HELP.length - 1, modal.page || 0));
-      const pg = HELP[p];
-      const last = p === HELP.length - 1;
-      const endLabel = modal.first ? 'Start playing' : game.live ? 'Back to the island' : 'Done';
-      return `<div class="tw-mhead"><span class="tw-eyebrow">How to play · ${p + 1} of ${HELP.length}</span>
-          ${last ? closeBtn : '<button class="tw-btn quiet tw-skip" data-a="closeModal">Skip</button>'}</div>
-        <div class="tw-hpage ${modal.dir > 0 ? 'fwd' : modal.dir < 0 ? 'back' : ''}">
-          <div class="tw-hpic">${pg.pic(game)}</div>
-          <h2>${esc(pg.t)}</h2>
-          <ul class="tw-hl">${pg.p.map(([ic, t]) => `<li><span class="ic">${ic}</span><span>${esc(t)}</span></li>`).join('')}</ul>
-        </div>
-        <div class="tw-pdots" aria-hidden="true">${HELP.map((_, i) => `<i class="${i === p ? 'on' : ''}"></i>`).join('')}</div>
-        <div class="tw-pager"><button class="tw-btn" data-a="helpPrev" ${p === 0 ? 'disabled' : ''}>Back</button>
-        ${last ? `<button class="tw-btn primary" data-a="closeModal">${uiIcon('play', 'sm')} ${endLabel}</button>` : `<button class="tw-btn primary" data-a="helpNext">Next ${uiIcon('arrow', 'sm')}</button>`}</div>`;
     }
     if (k === 'goals') {
       const gt = modal.tab || 'goals';
@@ -567,7 +555,6 @@ export function createUI(host, game) {
     if (!el || !root.contains(el)) return;
     const a = el.dataset.a;
     if (el.disabled) return;
-    if (performance.now() < swipeUntil && mbox.contains(el)) return; // a swipe just turned the page
     if (a !== 'chip') hideTip();
     const id = el.dataset.id ? Number(el.dataset.id) : -1;
     switch (a) {
@@ -593,9 +580,8 @@ export function createUI(host, game) {
       case 'closeModal': game.tap(); hideModal(); break;
       case 'resume': game.tap(); if (game.speed === 0) game.setSpeed(1); hideModal(); break;
       case 'm-goals': game.tap(); showModal('goals'); break;
-      case 'm-help': game.tap(); showModal('help', { page: 0, back: modal && modal.kind }); break;
-      case 'helpNext': helpGo(1); break;
-      case 'helpPrev': helpGo(-1); break;
+      case 'm-help': game.tap(); openHelp(); break;
+      case 'm-tips': game.tap(); openHelp(false, true); break;
       case 'gtab': game.tap(); modal.tab = el.dataset.v; renderModal(true); break;
       case 'm-new': game.tap(); if (game.live && !game.s.charter) showModal('confirmNew'); else game.openNew(); break;
       case 'newIsland': game.tap(); game.openNew(); break;
@@ -623,34 +609,24 @@ export function createUI(host, game) {
   function onKey(e) {
     usedKeys = true;
     if (e.key === 'Enter' && e.target.dataset && e.target.dataset.in === 'seed') e.target.blur();
-    if (modal && modal.kind === 'help' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); helpGo(e.key === 'ArrowRight' ? 1 : -1); }
   }
-  // ---------- How to play paging and swipe ----------
-  function helpGo(dir) {
-    if (!modal || modal.kind !== 'help') return;
-    const p = Math.max(0, Math.min(HELP.length - 1, (modal.page || 0) + dir));
-    if (p === modal.page) return;
-    game.tap();
-    modal.page = p; modal.dir = dir;
-    renderModal(true);
-    const f = dir > 0 ? mbox.querySelector('[data-a="helpNext"]') || [...mbox.querySelectorAll('[data-a="closeModal"]')].pop()
-      : mbox.querySelector('[data-a="helpPrev"]:not([disabled])');
-    if (f && mbox.contains(document.activeElement)) f.focus({ preventScroll: true });
+  // ---------- How to play ----------
+  // The guide opens over whatever is showing (title card, pause menu or the island) and closing it returns there,
+  // because the modal underneath is left as it was. `first` is the automatic showing on the first new island;
+  // `tips` opens only the More tips cards (from a menu). Both use the same dialog slot and the same 'help' pause.
+  let guide = null, disposed = false;
+  function openHelp(first = false, tips = false) {
+    if (guide) return;
+    hideTip();
+    const more = morePages(game.thumbs);
+    guide = openGuide(guideHost, {
+      className: 'tw-guide',
+      ...(tips ? { pages: more, label: MORE_LABEL } : { pages: guidePages(game.thumbs), more }),
+      doneLabel: first ? 'Start settling' : 'Got it',
+      onClose: () => { guide = null; if (!disposed) game.onModal(false, 'help'); },
+    });
+    game.onModal(true, 'help');
   }
-  let swipe = null, swipeUntil = 0;
-  function swipeDown(e) { swipe = modal && modal.kind === 'help' && e.isPrimary ? { x: e.clientX, y: e.clientY, id: e.pointerId } : null; }
-  function swipeUp(e) {
-    if (!swipe || e.pointerId !== swipe.id) return;
-    const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
-    swipe = null;
-    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    swipeUntil = performance.now() + 200;
-    helpGo(dx < 0 ? 1 : -1);
-  }
-  const swipeCancel = () => { swipe = null; };
-  mbox.addEventListener('pointerdown', swipeDown);
-  mbox.addEventListener('pointerup', swipeUp);
-  mbox.addEventListener('pointercancel', swipeCancel);
 
   // ---------- First-run coach marks ----------
   const coachEl = $('.tw-coach'), coachRing = coachEl.querySelector('.ring'), coachBub = coachEl.querySelector('.bub');
@@ -723,7 +699,7 @@ export function createUI(host, game) {
   root.addEventListener('keydown', onKey);
   // A tap on the dimmed backdrop closes dismissable modals.
   modalEl.addEventListener('click', (e) => {
-    if (e.target === modalEl && modal && ['goals', 'trade', 'help', 'menu'].includes(modal.kind)) { hideModal(); }
+    if (e.target === modalEl && modal && ['goals', 'trade', 'menu'].includes(modal.kind)) { hideModal(); }
   });
 
   // ---------- Per-tick ----------
@@ -752,8 +728,8 @@ export function createUI(host, game) {
   }
 
   return {
-    update, toast, flash, showModal, hideModal, renderTray, renderSheet, renderConfirm, setHudVisible, startCoach,
-    get modalKind() { return modal ? modal.kind : coachStep >= 0 ? 'coach' : null; },
+    update, toast, flash, showModal, hideModal, renderTray, renderSheet, renderConfirm, setHudVisible, startCoach, openHelp,
+    get modalKind() { return guide ? 'help' : modal ? modal.kind : coachStep >= 0 ? 'coach' : null; },
     refreshModal() { renderModal(true); },
     refreshModalSoft() {
       if (!modal || modal.kind !== 'new') return;
@@ -772,11 +748,10 @@ export function createUI(host, game) {
       root.removeEventListener('pointerdown', mark, true);
       root.removeEventListener('input', onInput);
       root.removeEventListener('keydown', onKey);
-      mbox.removeEventListener('pointerdown', swipeDown);
-      mbox.removeEventListener('pointerup', swipeUp);
-      mbox.removeEventListener('pointercancel', swipeCancel);
       coachEl.removeEventListener('click', coachNext);
       window.removeEventListener('resize', onResize);
+      disposed = true;
+      guide?.close();
       root.remove();
     },
   };

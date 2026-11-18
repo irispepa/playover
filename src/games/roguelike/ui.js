@@ -6,7 +6,6 @@ import {
 import { perkById, tagCounts, previewEquip, itemStatLines, COMPARE_KEYS, COMPARE_INFO, formatStat, sellValue } from './items.js';
 import { xpNeed } from './sim.js';
 import { classUnlocked, bestiaryList } from './save.js';
-import { howToPages } from './howto.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const hex = (n) => `#${(n >>> 0).toString(16).padStart(6, '0')}`;
@@ -377,9 +376,12 @@ export function createUI(root, H) {
         <button class="dv-big ${info.save ? '' : 'dv-primary'}" data-act="newrun">${icon('sword', 20)}<span>New run${info.save ? '<small>Replaces your saved run</small>' : ''}</span></button>
         <div class="dv-mrow">
           <button class="dv-big" data-act="howto">${icon('scroll', 20)}<span>How to play</span></button>
-          <button class="dv-big" data-act="records">${icon('crown', 20)}<span>Records</span></button>
+          <button class="dv-big" data-act="moretips">${icon('gem', 20)}<span>More tips</span></button>
         </div>
-        <button class="dv-big dv-ghost" data-act="exit">${icon('close', 18)}<span>Back to games</span></button>
+        <div class="dv-mrow">
+          <button class="dv-big" data-act="records">${icon('crown', 20)}<span>Records</span></button>
+          <button class="dv-big dv-ghost" data-act="exit">${icon('close', 18)}<span>Back to games</span></button>
+        </div>
       </div>
       ${stats}`, 'dv-titleov');
   };
@@ -434,7 +436,10 @@ export function createUI(root, H) {
       <div class="dv-menu">
         <button class="dv-big dv-primary" data-act="resume">${icon('dash', 20)}<span>Resume</span></button>
         <button class="dv-big" data-act="inventory">${icon('bag', 20)}<span>Inventory</span></button>
-        <button class="dv-big" data-act="howto">${icon('scroll', 20)}<span>How to play</span></button>
+        <div class="dv-mrow">
+          <button class="dv-big" data-act="howto">${icon('scroll', 20)}<span>How to play</span></button>
+          <button class="dv-big" data-act="moretips">${icon('gem', 20)}<span>More tips</span></button>
+        </div>
         <button class="dv-big dv-danger" data-act="abandon">${icon('skull', 20)}<span>Abandon run</span></button>
         <button class="dv-big dv-ghost" data-act="exit">${icon('close', 18)}<span>Save and exit to menu</span></button>
       </div>`, 'dv-pauseov');
@@ -590,70 +595,6 @@ export function createUI(root, H) {
     return `${itemBlock(it)}<div class="dv-cmp">${cmp}</div><div class="dv-acts">${acts}</div>`;
   }
 
-  // ---- how to play: paged guide, one topic per page
-  U.how = null;
-  U.showHowTo = (backAct, classId) => {
-    const keyboard = typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches;
-    const pages = howToPages(classId || U.classId, keyboard);
-    const n = pages.length;
-    const finish = backAct === 'howstart' ? 'Descend' : 'Got it';
-    const body = pages.map((pg, i) => `<section class="dv-hpage" aria-roledescription="page" aria-label="${i + 1} of ${n}: ${esc(pg.title)}" ${i ? 'aria-hidden="true"' : ''}>
-        <div class="dv-hstep">${i + 1} of ${n}</div><h3>${esc(pg.title)}</h3>${pg.pic}
-        <ul class="dv-hpts">${pg.points.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>${pg.extra || ''}</section>`).join('');
-    const panel = open(`
-      <div class="dv-h">${backAct === 'howstart'
-        ? `<h2>How to play</h2><button class="dv-pill dv-skip" data-act="howstart">Skip</button>`
-        : `<button class="dv-x" data-act="${backAct}" aria-label="Close">${icon('close', 18)}</button><h2>How to play</h2>`}</div>
-      <div class="dv-hwrap"><div class="dv-htrack">${body}</div></div>
-      <div class="dv-dots" aria-hidden="true">${pages.map(() => '<i></i>').join('')}</div>
-      <div class="dv-hnav">
-        <button class="dv-big dv-hprev" data-act="howprev">${icon('down', 16)}<span>Back</span></button>
-        <button class="dv-big dv-primary dv-hnext" data-act="hownext"><span>Next</span>${icon('down', 16)}</button>
-        <button class="dv-big dv-primary dv-hdone" data-act="${backAct}"><span>${finish}</span></button>
-      </div>`, 'dv-howov');
-    U.how = { i: 0, n, panel };
-    // Swipe between pages.
-    const wrap = panel.querySelector('.dv-hwrap');
-    let sx = 0, sy = 0, sid = -1;
-    wrap.addEventListener('pointerdown', (e) => { sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
-    const up = (e) => {
-      if (e.pointerId !== sid) return;
-      sid = -1;
-      const dx = e.clientX - sx, dy = e.clientY - sy;
-      if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) howGo(U.how.i + (dx < 0 ? 1 : -1));
-    };
-    wrap.addEventListener('pointerup', up);
-    wrap.addEventListener('pointercancel', () => { sid = -1; });
-    howGo(0);
-  };
-  function howGo(i) {
-    const h = U.how;
-    if (!h || U.overlay !== 'dv-howov') return;
-    i = Math.max(0, Math.min(h.n - 1, i));
-    const moved = i !== h.i;
-    h.i = i;
-    const p = h.panel;
-    p.querySelector('.dv-htrack').style.transform = `translateX(${-100 * i}%)`;
-    p.querySelectorAll('.dv-hpage').forEach((s, k) => { if (k === i) { s.removeAttribute('aria-hidden'); s.scrollTop = 0; } else s.setAttribute('aria-hidden', 'true'); });
-    p.querySelectorAll('.dv-dots i').forEach((d, k) => d.classList.toggle('dv-on', k === i));
-    const last = i === h.n - 1;
-    p.querySelector('.dv-hprev').disabled = i === 0;
-    p.querySelector('.dv-hnext').hidden = last;
-    p.querySelector('.dv-hdone').hidden = !last;
-    if (moved) {
-      const f = document.activeElement;
-      if (f && f.closest && f.closest('.dv-hnav') && f.hidden) (last ? p.querySelector('.dv-hdone') : p.querySelector('.dv-hnext')).focus();
-    }
-  }
-  U.actions.howprev = () => howGo(U.how.i - 1);
-  U.actions.hownext = () => howGo(U.how.i + 1);
-  const onHowKey = (e) => {
-    if (U.overlay !== 'dv-howov' || !U.how) return;
-    if (e.key === 'ArrowRight') { howGo(U.how.i + 1); e.preventDefault(); }
-    else if (e.key === 'ArrowLeft') { howGo(U.how.i - 1); e.preventDefault(); }
-  };
-  window.addEventListener('keydown', onHowKey);
-
   // ---- records
   U.showRecords = (meta) => {
     const best = CLASS_ORDER.map((id) => `<div class="dv-srow">${icon(WEAPONS[CLASSES[id].weapon].icon, 15)}<span>${esc(CLASSES[id].name)}</span><b>${meta.bestByClass[id] ? `floor ${meta.bestByClass[id]}` : classUnlocked(meta, id) ? '—' : 'locked'}</b></div>`).join('');
@@ -695,6 +636,6 @@ export function createUI(root, H) {
       </div>`, 'dv-deadov');
   };
 
-  U.dispose = () => { window.removeEventListener('keydown', onHowKey); clearTimeout(bannerT); for (const id of U.timers) clearTimeout(id); U.timers.clear(); ui.remove(); };
+  U.dispose = () => { clearTimeout(bannerT); for (const id of U.timers) clearTimeout(id); U.timers.clear(); ui.remove(); };
   return U;
 }

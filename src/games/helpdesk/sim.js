@@ -12,6 +12,7 @@ export const ACTIVE_THREADS = 14;
 export const BOARD_CAP = 8;
 export const WIKI_NOTES = 3;
 export const DRIFT_AGE = 2;       // nights a ticket waits before the person finds a workaround
+export const MAX_HOURS = 9;       // a day never holds more hours than this
 
 function roll(s) {
   s.n = (s.n + 1) >>> 0;
@@ -81,7 +82,7 @@ export function dayHours(s) {
   if (s.up.chair) h += 1;
   if (s.quirk === 'earlybird') h += 1;
   for (const p of perks(s)) if (p.hours) h += p.hours;
-  return Math.min(9, h);
+  return Math.min(MAX_HOURS, h);
 }
 
 export function waiting(s) { return s.board.filter((t) => !t.project).length; }

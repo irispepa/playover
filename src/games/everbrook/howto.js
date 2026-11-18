@@ -93,3 +93,96 @@ export function guidePages(thumb) {
     { title: 'Look around', art: look, points: ['Drag to move, pinch to zoom, twist to turn.', 'Mouse: wheel zooms, right-drag turns.'] },
   ];
 }
+
+// Text drawn inside the art, in the game's own fonts.
+const txt = (x, y, s, size, fill = C.ink, extra = '') => `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" font-family="'EB Nunito', sans-serif" font-weight="800" ${extra}>${s}</text>`;
+// A path tile run: sandy band with the dashed rut the Path tile icon uses.
+const path = (d) => `<path d="${d}" fill="none" stroke="#c4a678" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#8d6f45" stroke-width="1.6" stroke-dasharray="3 4" stroke-linecap="round"/>`;
+// A paper panel like the HUD's.
+const panel = (x, y, w, h, r = 10, fill = C.paper) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${fill}" stroke="${C.edge}" stroke-width="1.5"/>`;
+// A keyboard key.
+const key = (x, y, label, w = 20) => `<rect x="${x}" y="${y + 2}" width="${w}" height="20" rx="5" fill="${C.edge}"/><rect x="${x}" y="${y}" width="${w}" height="20" rx="5" fill="${C.paper}" stroke="${C.edge}" stroke-width="1.2"/>${txt(x + w / 2, y + 14, label, label.length > 1 ? 8 : 10, C.ink, 'text-anchor="middle"')}`;
+
+// "More tips": the things the short guide leaves out, offered from its last card and from the menu.
+export function morePages(thumb) {
+  const t = (k) => thumb(k);
+
+  // 1. A well's water runs along the path that touches it, out to homes beyond its circle.
+  const route = 'M44 80C76 80 92 58 128 56S176 40 198 36';
+  const paths = svg(`${tufts([[20, 24, 10], [100, 108, 9], [178, 100, 10]])}
+    <path d="${route}" fill="none" stroke="${C.reach}" stroke-opacity=".22" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="40" cy="76" rx="32" ry="22" fill="${C.reach}" fill-opacity=".22" stroke="${C.reach}" stroke-width="2" stroke-dasharray="5 4"/>
+    ${path(route)}
+    ${model(t('well'), 40, 82, 38)}
+    ${model(t('home:1:0'), 128, 50, 40)}${model(t('home:1:0'), 172, 38, 36)}
+    <circle cx="146" cy="16" r="8" fill="${C.good}"/>${ic('up', 141, 11, 10, '#fff')}
+    ${hudBtn(150, 74, ic('eye', 158, 82, 20), 36)}`);
+
+  // 2. The strip above the build bar lists each bonus for the spot under the ghost.
+  const strip = svg(`${tufts([[16, 60, 9], [190, 14, 8]])}
+    ${path('M-4 58H204')}
+    ${tree(30, 40, 1, true)}${tree(56, 30, 0.9)}${tree(140, 34, 1)}${tree(166, 40, 1, true)}${tree(188, 46, 0.9)}${tree(14, 34, 0.8)}
+    <path d="M100 22l30 16-30 16-30-16z" fill="${C.ghost}" fill-opacity=".25" stroke="${C.ghost}" stroke-width="2.5" stroke-dasharray="5 3"/>
+    ${model(t('woodcutter'), 100, 58, 58, 'opacity=".9"')}
+    ${panel(6, 70, 188, 44, 12)}
+    ${txt(16, 86, 'Woodcutter’s Camp', 10, C.ink, 'font-family="\'EB Fraunces\', Georgia, serif" font-weight="650"')}
+    ${txt(16, 98, '+45% Woodland nearby', 8, C.good)}${txt(16, 108, '+10% Beside a path', 8, C.good)}
+    <rect x="142" y="80" width="44" height="24" rx="8" fill="${C.btn}"/>${ic('check', 148, 84, 14, '#fff')}${txt(163, 96, 'Build', 8, '#fff')}`);
+
+  // 3. The bulb opens Discoveries; a locked building in the bar names the one it needs.
+  const row = (y, name, tag, can) => `<rect x="94" y="${y}" width="96" height="22" rx="7" fill="${can ? '#fff' : '#e4f0d6'}" stroke="${can ? C.btn : '#b9d39c'}" stroke-width="1.5"/>${txt(101, y + 14, name, 8)}${tag}`;
+  const disc = svg(`${tufts([[20, 110, 10], [70, 14, 8]])}
+    ${hudBtn(12, 8, ic('knowledge', 19, 15, 22), 36)}
+    <circle cx="46" cy="10" r="7" fill="#c2483a" stroke="${C.paper}" stroke-width="1.5"/>${txt(46, 13, '1', 8, '#fff', 'text-anchor="middle"')}
+    ${panel(10, 54, 52, 60, 10)}
+    <image href="${t('fisher')}" x="14" y="52" width="44" height="44" opacity=".45"/>
+    ${ic('lock', 14, 98, 10, C.soft)}${txt(26, 106, 'Fishing', 7.5, C.soft)}
+    ${arrow('M48 30c14-4 24-2 34 4', C.ink, 2.5)}${arrow('M76 30l7 4-6 5', C.ink, 2.5)}
+    ${arrow('M66 86c8 0 14-4 18-10', C.ink, 2.5)}${arrow('M78 75l6 1 0 6', C.ink, 2.5)}
+    ${panel(86, 8, 110, 104, 12)}
+    ${txt(96, 25, 'Discoveries', 10, C.ink, 'font-family="\'EB Fraunces\', Georgia, serif" font-weight="650"')}
+    ${row(36, 'Fishing', `${ic('knowledge', 160, 41, 12)}${txt(173, 51, '30', 8)}`, true)}
+    ${row(62, 'Toolmaking', ic('check', 168, 68, 13, C.good), false)}
+    <rect x="94" y="88" width="96" height="20" rx="7" fill="${C.paper2}" stroke="${C.edge}" stroke-width="1.5"/>${txt(101, 101, 'Monuments', 8, C.soft)}${ic('knowledge', 160, 92, 12)}${txt(173, 102, '90', 8, C.soft)}`);
+
+  // 4. A full ring offers three festivals to choose from.
+  const gift = (x, y, rot, icons) => `<g transform="rotate(${rot} ${x + 22} ${y + 30})">${panel(x, y, 44, 58, 9, '#fff')}${icons}</g>`;
+  const fest = svg(`${tufts([[24, 104, 10], [180, 110, 8]])}
+    <circle cx="40" cy="58" r="30" fill="${C.culture}" opacity=".18"/>
+    ${hudBtn(20, 38, ic('culture', 28, 46, 24), 40)}
+    <circle cx="40" cy="58" r="22.5" fill="none" stroke="${C.culture}" stroke-width="3.5"/>
+    ${ic('star', 10, 18, 10, '#ffe9a8')}${ic('star', 62, 88, 9, '#fff')}
+    ${arrow('M70 58h10', C.ink, 2.5)}${arrow('M75 52l6 6-6 6', C.ink, 2.5)}
+    ${gift(86, 34, -8, ic('food', 96, 50, 24))}
+    ${gift(118, 28, 0, `${ic('wood', 124, 36, 20)}${ic('stone', 124, 58, 20)}`)}
+    ${gift(150, 34, 8, ic('people', 160, 50, 24))}`);
+
+  // 5. Bring materials to the wonder, one stage at a time; storehouses hold more.
+  const wonder = svg(`${tufts([[20, 110, 10], [190, 60, 9]])}
+    ${model(t('stonecircle'), 64, 114, 78)}
+    ${panel(12, 6, 104, 46, 10)}<rect x="20" y="13" width="88" height="8" rx="4" fill="${C.paper2}"/><rect x="20" y="13" width="44" height="8" rx="4" fill="#b98a4a"/>
+    <rect x="20" y="26" width="88" height="19" rx="7" fill="${C.btn}"/>${ic('up', 40, 29, 13, '#fff')}${txt(56, 39.5, 'Raise', 8.5, '#fff')}
+    ${model(t('storehouse'), 166, 110, 52)}
+    ${ic('stone', 136, 34, 18)}${ic('wood', 158, 22, 18)}
+    ${arrow('M156 62c-8-8-20-12-36-8', C.ink, 2.5)}${arrow('M127 49l-7 5 7 5', C.ink, 2.5)}`);
+
+  // 6. The speed buttons and the desktop keys.
+  const btnAt = (x, inner, on) => `${on ? `<rect x="${x}" y="11" width="28" height="26" rx="8" fill="#7d5a2c"/>` : ''}${inner}`;
+  const keys = svg(`${tufts([[24, 110, 10], [186, 110, 8]])}
+    ${panel(56, 8, 96, 32, 12)}
+    ${btnAt(60, ic('pause', 66, 16, 16, C.soft))}${btnAt(90, ic('play', 96, 16, 16, C.soft))}${btnAt(120, ic('fast', 126, 16, 16, '#ffe9a8'), true)}
+    ${tip(146, 34)}
+    ${key(36, 56, 'W')}${key(14, 80, 'A')}${key(36, 80, 'S')}${key(58, 80, 'D')}
+    ${key(92, 56, 'Q')}${key(114, 56, 'E')}
+    ${key(152, 56, 'Esc', 32)}
+    ${key(92, 80, 'Space', 92)}`);
+
+  return [
+    { title: 'Paths carry services', art: paths, points: ['Services reach further along paths that touch them.', 'The eye button shows which homes each service reaches.'] },
+    { title: 'Read the bonus strip', art: strip, points: ['Before you build, the strip shows each spot’s bonus.', 'Workplaces beside a path make 10% more.'] },
+    { title: 'Spend your Knowledge', art: disc, points: ['Tap the light bulb to choose Discoveries.', 'Tap a locked building to see what opens it.'] },
+    { title: 'Pick a festival', art: fest, points: ['A full ring offers three gifts, like food, timber or newcomers.', 'Each festival needs more Culture than the last.'] },
+    { title: 'Raise the wonder', art: wonder, points: ['Build it, then tap it and bring materials for each stage.', 'Stores too small? Build more storehouses.'] },
+    { title: 'Time and keys', art: keys, points: ['Tap fast twice for top speed.', 'WASD moves, Q and E turn, space pauses, Escape cancels.'] },
+  ];
+}

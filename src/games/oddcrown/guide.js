@@ -126,3 +126,89 @@ export const GUIDE_PAGES = [
   { title: 'Peek or watch', art: peekArt(), points: ['Peek spends 1 insight to reveal a piece’s rule.', 'Blue’s moves reveal rules too.'] },
   { title: 'Watch your step', art: floorArt(), points: ['Hidden tiles: a spring, a confetti cannon, a king’s trapdoor.'] },
 ];
+
+// "More tips": optional extra cards, offered from the last How to play card.
+const label = (x, y, t, size = 15) => `<text x="${x}" y="${y}" text-anchor="middle" font-family="Georgia, serif" font-size="${size}" font-weight="bold" fill="${DOT}">${t}</text>`;
+
+function truceArt() {
+  const b = board(5, 2, 40, 48, 24);
+  const [gx, gy] = b.c(0, 1), [kx, ky] = b.c(4, 0);
+  const shield = `<path d="M${kx} ${ky - 40} L${kx + 15} ${ky - 34} V${ky - 20} Q${kx + 15} ${ky - 4} ${kx} ${ky + 4} Q${kx - 15} ${ky - 4} ${kx - 15} ${ky - 20} V${ky - 34} Z" fill="${RING}" fill-opacity=".18" stroke="${RING}" stroke-width="2.2" stroke-linejoin="round"/>`;
+  const pips = [0, 1, 2].map((i) => `<circle cx="${82 + i * 18}" cy="22" r="6" fill="${DOT}"/>`).join('');
+  return svg(arrowHead('oc-b1', MISS) + b.svg + pips
+    + `<path d="M${gx + 12} ${gy - 18} Q${(gx + kx) / 2} ${ky - 34} ${kx - 20} ${ky - 18}" fill="none" stroke="${MISS}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1 6" marker-end="url(#oc-b1)"/>`
+    + piece('king', gx, gy + 8, 0, .9) + shield + piece('king', kx, ky + 8, 1, .9));
+}
+
+function insightArt() {
+  const b = board(2, 1, 22, 72, 30);
+  const [qx, qy] = b.c(0, 0), [px, py] = b.c(1, 0);
+  const sparks = [0, 1, 2, 3, 4, 5].map((i) => {
+    const a = i * Math.PI / 3 + .3, cx = px, cy = py - 8;
+    return `<line x1="${cx + Math.cos(a) * 12}" y1="${cy + Math.sin(a) * 12}" x2="${cx + Math.cos(a) * 17}" y2="${cy + Math.sin(a) * 17}"/>`;
+  }).join('');
+  const coins = [0, 1, 2, 3, 4].map((i) => `<circle cx="${64 + i * 18}" cy="18" r="6.5" fill="${i < 4 ? DOT : 'none'}" stroke="${DOT}" stroke-width="1.8"/>`).join('');
+  const rounds = [0, 1, 2].map((i) => `<circle cx="${130 + i * 18}" cy="88" r="6" fill="${DOT}"/>`).join('');
+  return svg(coins
+    + b.svg + `<g stroke="${DOT}" stroke-width="2.2" stroke-linecap="round">${sparks}</g>`
+    + piece('pawn', px + 2, py + 6, 1, .8, ' rotate(30)') + piece('queen', qx, qy + 7, 0, .85)
+    + label(52, 56, '+1', 17)
+    + `<path d="M124 100 Q148 108 172 100" fill="none" stroke="${DOT}" stroke-width="1.8" stroke-linecap="round"/>`
+    + rounds + label(148, 66, '+1', 17));
+}
+
+function dotsArt() {
+  const b = board(6, 3, 28, 26, 24);
+  const [rx, ry] = b.c(1, 1), [kx, ky] = b.c(4, 1);
+  const dots = [[0, 1], [2, 1], [3, 1], [1, 2]].map(([x, y]) => {
+    const [cx, cy] = b.c(x, y);
+    return `<circle cx="${cx}" cy="${cy}" r="3.6" fill="${DOT}"/>`;
+  }).join('');
+  return svg(b.svg + dots
+    + `<ellipse cx="${rx}" cy="${ry + 6}" rx="13" ry="5" fill="none" stroke="${RING}" stroke-width="2.2"/>`
+    + piece('rook', rx, ry + 6, 1, .9)
+    + `<ellipse cx="${kx}" cy="${ky + 6}" rx="13" ry="5" fill="none" stroke="${MISS}" stroke-width="2.2"/>`
+    + `<circle cx="${kx}" cy="${ky}" r="3.6" fill="${DOT}"/>`
+    + piece('king', kx, ky + 6, 0, .9)
+    + `<g fill="${MISS}"><rect x="${kx + 13}" y="${ky - 34}" width="4" height="11" rx="2"/><circle cx="${kx + 15}" cy="${ky - 18}" r="2.2"/></g>`);
+}
+
+function notebookArt() {
+  const PAGE = '#efe4cc', INK = '#5d6c84';
+  const lines = (x, y, n) => Array.from({ length: n }, (_, i) => `<rect x="${x}" y="${y + i * 9}" width="${i === n - 1 ? 30 : 44}" height="3" rx="1.5" fill="${INK}" opacity=".55"/>`).join('');
+  return svg(`<path d="M28 26 Q64 18 100 28 Q136 18 172 26 V104 Q136 96 100 106 Q64 96 28 104 Z" fill="${FRAME}"/>`
+    + `<path d="M34 28 Q66 22 98 31 V100 Q66 92 34 98 Z" fill="${PAGE}" stroke="${GOLD_EDGE}" stroke-width="1.2"/>`
+    + `<path d="M102 31 Q134 22 166 28 V98 Q134 92 102 100 Z" fill="${PAGE}" stroke="${GOLD_EDGE}" stroke-width="1.2"/>`
+    + piece('knight', 66, 62, 0, .8) + lines(44, 72, 3)
+    + question(134, 50) + lines(112, 72, 3));
+}
+
+function undoArt() {
+  const b = board(5, 2, 40, 58, 24);
+  const [ox, oy] = b.c(1, 1), [nx, ny] = b.c(3, 0);
+  return svg(arrowHead('oc-b5', DOT) + b.svg + eye(100, 24)
+    + `<g opacity=".38">${piece('bishop', nx, ny + 6, 0, .85)}</g>`
+    + piece('bishop', ox, oy + 6, 0, .85)
+    + `<path d="M${nx - 6} ${ny - 26} Q${(ox + nx) / 2} ${ny - 34} ${ox + 10} ${oy - 34}" fill="none" stroke="${DOT}" stroke-width="2.6" stroke-linecap="round" marker-end="url(#oc-b5)"/>`);
+}
+
+function parachuteArt() {
+  const b = board(2, 1, 50, 62, 50);
+  const [lx, ly] = b.c(0, 0), [rx, ry] = b.c(1, 0);
+  const chute = (x, y) => `<path d="M${x - 15} ${y - 46} Q${x} ${y - 72} ${x + 15} ${y - 46} Q${x + 7.5} ${y - 50} ${x} ${y - 46} Q${x - 7.5} ${y - 50} ${x - 15} ${y - 46} Z" fill="#c9d3e3" stroke="${FRAME}" stroke-width="1.2" stroke-linejoin="round"/>`
+    + `<g stroke="#c9d3e3" stroke-width="1"><line x1="${x - 15}" y1="${y - 46}" x2="${x - 3}" y2="${y - 30}"/><line x1="${x + 15}" y1="${y - 46}" x2="${x + 3}" y2="${y - 30}"/></g>`;
+  const pit = (x, y, marked) => `<ellipse cx="${x}" cy="${y + 2}" rx="15" ry="8" fill="#0b1020" stroke="${PIT}" stroke-width="3"/>`
+    + (marked ? `<ellipse cx="${x}" cy="${y + 2}" rx="21" ry="11.5" fill="none" stroke="${PIT}" stroke-width="2" stroke-dasharray="3 3"/>` : '');
+  return svg(b.svg
+    + pit(lx, ly, false) + chute(lx, ly) + piece('king', lx, ly, 0, .8)
+    + pit(rx, ry, true) + piece('king', rx + 3, ry - 4, 0, .8, ' rotate(24)') + cross(rx + 18, ry - 42));
+}
+
+export const MORE_PAGES = [
+  { title: 'Not quite chess', art: truceArt(), points: ['No check, castling or promotion. Just capture the king.', 'Kings can’t be taken during the first 3 rounds.'] },
+  { title: 'Earning insight', art: insightArt(), points: ['Each capture you make earns 1 insight.', 'Every 3 rounds earns 1 more, up to 5.'] },
+  { title: 'Follow the gold dots', art: dotsArt(), points: ['Tap a piece with a known rule to see its landing squares.', 'Try blue pieces to spot threats.'] },
+  { title: 'Check the Notebook', art: notebookArt(), points: ['The Notebook lists every rule found so far.', 'It also shows recent moves and your parachute.'] },
+  { title: 'Undo keeps discoveries', art: undoArt(), points: ['Undo rewinds your move and blue’s reply, up to 3 turns.', 'Rules and tiles you found stay found.'] },
+  { title: 'One parachute per king', art: parachuteArt(), points: ['Each king survives one trapdoor fall by parachute.', 'Then the hole is marked. A second fall loses.'] },
+];

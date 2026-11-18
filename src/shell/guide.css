@@ -42,6 +42,10 @@
 .fg-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--g-line); transition: transform .2s, background .2s; }
 .fg-dot[aria-current="step"]::after { background: var(--g-accent); transform: scale(1.35); }
 
+.fg-stack[hidden], .fg-dots[hidden], .fg-more[hidden] { display: none; }
+.fg-guide .fg-more { align-self: center; min-height: 44px; margin: -8px 0 -6px; padding: 0 16px; border-radius: 22px;
+  font-size: 14.5px; font-weight: 700; color: var(--g-accent); }
+.fg-guide .fg-more:active { background: var(--g-panel); }
 .fg-nav { display: flex; gap: 10px; }
 .fg-nav button { flex: 1; min-height: 50px; border-radius: 16px; font-size: 16px; font-weight: 700; }
 .fg-back { border: 1px solid var(--g-line) !important; background: var(--g-panel) !important; }

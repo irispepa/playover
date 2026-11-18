@@ -8,8 +8,8 @@ import * as S from '../sim.js';
 import { portrait, face, silhouette } from './portraits.js';
 import { background } from './backgrounds.js';
 import { IC } from './icons.js';
-import { GUIDE_PAGES } from './guide.js';
-import { openGuide } from '../../../shell/guide.js';
+import { GUIDE_PAGES, MORE_PAGES } from './guide.js';
+import { openGuide, MORE_LABEL } from '../../../shell/guide.js';
 
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function h(tag, cls, html) { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
@@ -220,9 +220,11 @@ export function createApp(ctx) {
         settingsRows(body);
         const help = btn('lf-btn alt', 'How to play', howToPlay);
         help.style.marginTop = '16px';
+        const tips = btn('lf-btn alt', MORE_LABEL, moreTips);
+        tips.style.marginTop = '10px';
         const leave = btn('lf-btn', 'Leave to the title<small>This scene will start over next time</small>', () => { stop = true; title(); });
         leave.style.marginTop = '10px';
-        body.append(help, leave);
+        body.append(help, tips, leave);
         scr.append(ov);
       }
 
@@ -537,14 +539,20 @@ export function createApp(ctx) {
     settingsRows(body);
     const help = btn('lf-btn alt', 'How to play', howToPlay);
     help.style.marginTop = '16px';
-    body.append(help);
+    const tips = btn('lf-btn alt', MORE_LABEL, moreTips);
+    tips.style.marginTop = '10px';
+    body.append(help, tips);
     if (inRun) { const b = btn('lf-btn', 'Leave to the title<small>Your week is saved</small>', title); b.style.marginTop = '10px'; body.append(b); }
     else body.append(h('p', '', '<br>Your week is saved after every morning, afternoon and evening.'));
     show(ov);
   }
   function howToPlay() {
     if (guide?.open) return;
-    guide = openGuide(ctx.root, { className: 'lf-guide', pages: GUIDE_PAGES, doneLabel: 'Ask around', onClose() { guide = null; } });
+    guide = openGuide(ctx.root, { className: 'lf-guide', pages: GUIDE_PAGES, more: MORE_PAGES, doneLabel: 'Ask around', onClose() { guide = null; } });
+  }
+  function moreTips() {
+    if (guide?.open) return;
+    guide = openGuide(ctx.root, { className: 'lf-guide', pages: MORE_PAGES, label: MORE_LABEL, doneLabel: 'Got it', onClose() { guide = null; } });
   }
 
   const onKey = (e) => { if (keyHandler) keyHandler(e); };

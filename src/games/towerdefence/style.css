@@ -73,6 +73,9 @@
 .bm-card .ct svg { width: 12px; height: 12px; }
 .bm-card.on { border: 2px solid var(--accent); background: rgba(240, 180, 76, 0.16); }
 .bm-card.poor { opacity: 0.42; }
+.bm-card.bm-info { color: var(--muted); border-style: dashed; }
+.bm-card.bm-info svg { width: 26px; height: 26px; }
+.bm-card.bm-info .nm { line-height: 1.15; text-align: center; }
 
 /* sheets */
 .bm-sheet { pointer-events: auto; position: absolute; left: 6px; right: 6px; bottom: 6px; max-height: 64%; overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -208,21 +211,31 @@
 .bm-trow span { font-size: 12.5px; color: #b9c4d3; line-height: 1.3; }
 .bm-trow.boss { border-color: rgba(255, 122, 47, 0.5); background: rgba(255, 122, 47, 0.08); }
 .bm-n { font-variant-numeric: tabular-nums; }
-.bm-list-s { gap: 0; }
-.bm-list-s .bm-trow { padding: 5px 8px; border-radius: 8px; background: none; border: 0; }
-.bm-list-s .bm-trow:nth-child(odd) { background: rgba(255, 255, 255, 0.04); }
-.bm-list-s .bm-trow b { font-size: 13px; }
-.bm-list-s .bm-trow span { font-size: 12px; }
-.bm .bm-list-s .bm-trow > svg { width: 24px; height: 24px; }
 .bm-air, .bm-new { flex: none; font-style: normal; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 6px;
   color: #bfe3ff; background: rgba(127, 200, 255, 0.14); border: 1px solid rgba(127, 200, 255, 0.45); }
 .bm-new { color: #a6f0ff; background: rgba(127, 224, 255, 0.12); border-color: rgba(127, 224, 255, 0.5); }
-.bm-sw { flex: none; width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.18); }
 .bm-banner { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 12px; font-weight: 800; font-size: 16px;
   color: #ffe2a8; background: rgba(240, 180, 76, 0.14); border: 1px solid rgba(240, 180, 76, 0.55); }
 .bm-sum .bm-stat b { font-size: 17px; }
 .bm-over h2 { text-align: center; }
 .bm-over > p { text-align: center; }
+
+/* Towers reference: the box keeps its head and Close button, the list scrolls between them */
+.bm-box.bm-towers { overflow: hidden; gap: 8px; padding: 14px 14px 16px; }
+.bm-towers .bm-mhead { min-height: 44px; margin-right: -4px; }
+.bm-tlist { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; gap: 5px; margin: 0 -4px; padding: 0 4px; }
+.bm-tlist .bm-trow { padding: 7px 10px; align-items: flex-start; }
+.bm .bm-tlist .bm-trow > svg { width: 32px; height: 32px; margin-top: 2px; }
+.bm-tlist .bm-trow > div { gap: 2px; }
+.bm-tname { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 6px; }
+.bm-tname b { margin-right: 2px; }
+.bm-tg { flex: none; font-style: normal; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 6px;
+  color: #d6dee9; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.16); }
+.bm-tname em { line-height: 1.25; padding: 1px 5px; font-size: 10px; }
+.bm-trow .bm-cost { flex: none; display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; font-weight: 800; font-size: 14px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.bm .bm-cost svg { width: 14px; height: 14px; }
+.bm-trow .bm-cost span { color: inherit; font-size: inherit; }
+.bm-towers > .bm-btn { flex: none; }
 
 /* title */
 .bm-modal.bm-tmodal { background: radial-gradient(120% 80% at 50% 0%, #1a2638 0%, #0b111b 70%); }
@@ -258,69 +271,25 @@
 .bm-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .bm-foot .bm-btn { height: 46px; font-size: 15px; }
 
-/* how to play */
-.bm-how { height: min(640px, 100%); outline: none; padding: 12px 16px 16px; gap: 8px; overflow: hidden; touch-action: pan-y; }
-.bm-how-head { display: flex; align-items: center; gap: 8px; min-height: 44px; }
-.bm-dots { flex: 1; display: flex; gap: 6px; align-items: center; }
-.bm-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.22); transition: transform 0.2s, background-color 0.2s; }
-.bm-dots i.on { background: var(--accent); transform: scale(1.35); }
-.bm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.bm .bm-skip { background: transparent; color: var(--muted); padding: 0 10px; font-size: 14px; }
-.bm-how-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; padding: 0 4px; }
-.bm-how-page { display: flex; flex-direction: column; gap: 12px; padding-bottom: 4px; }
-.bm-how-page.in-r { animation: bm-in-r 0.22s ease-out; }
-.bm-how-page.in-l { animation: bm-in-l 0.22s ease-out; }
-@keyframes bm-in-r { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
-@keyframes bm-in-l { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
-.bm-pic { display: flex; justify-content: center; }
-.bm-box .bm-lead { margin: -4px 0 0; font-size: 15px; line-height: 1.4; color: #d6dee9; }
-.bm-how-page h2 { margin: 2px 0 0; }
-.bm-pic > .bm-list { width: 100%; }
-.bm .bm-pic svg.bm-grid { width: 100%; max-width: 300px; height: auto; }
-.bm .bm-pic svg.bm-mock { width: 100%; max-width: 320px; height: auto; }
-.bm-pic2 { width: 100%; display: flex; align-items: center; gap: 6px; }
-.bm .bm-pic2 svg.bm-grid { flex: 1; min-width: 0; }
-.bm .bm-arr { width: 22px; height: 22px; color: var(--muted); }
-.bm-box .bm-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.bm-box .bm-points li { position: relative; padding-left: 16px; font-size: 15px; line-height: 1.4; color: #d6dee9; }
-.bm-points li::before { content: ''; position: absolute; left: 2px; top: 0.6em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-.bm-box .bm-points li.num { display: flex; gap: 10px; padding-left: 0; }
-.bm-points li.num::before { display: none; }
-.bm-num { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #1a1205; font-size: 12px; font-weight: 800;
-  display: grid; place-items: center; margin-top: 1px; }
-.bm-how-nav { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
-.bm-invis { visibility: hidden; }
-.bm-mcard { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); }
-.bm-mcard small { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
-.bm-mcard b { font-size: 13px; }
-.bm-mcard.perk { border-color: rgba(127, 216, 255, 0.5); } .bm-mcard.perk small { color: #7fd8ff; }
-.bm-mcard.econ { border-color: rgba(240, 180, 76, 0.5); } .bm-mcard.econ small { color: var(--accent); }
-.bm-mcard.relic { border-color: rgba(195, 155, 255, 0.6); background: rgba(195, 155, 255, 0.08); } .bm-mcard.relic small { color: #c39bff; }
-.bm-cardpic { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
-.bm-cardpic .bm-mcard { min-height: 92px; justify-content: flex-start; }
-.bm-mcard span { font-size: 12px; line-height: 1.3; color: #b9c4d3; margin-top: 2px; }
-.bm-branchpic { display: flex; align-items: center; gap: 8px; width: 100%; }
-.bm-bp-src { flex: none; width: 76px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); }
-.bm .bm-bp-src svg { width: 34px; height: 34px; }
-.bm-bp-src b { font-size: 13px; }
-.bm-bp-src small { font-size: 11px; color: var(--muted); }
-.bm-bp-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.bm-bp-col .bm-mcard small { text-transform: none; letter-spacing: 0; font-weight: 500; color: #b9c4d3; font-size: 12px; line-height: 1.3; }
-
 @media (max-height: 700px) {
   .bm-tbox { gap: 10px; padding: 14px; }
   .bm-newrun { gap: 10px; padding: 12px; }
   .bm .bm-emblem { width: 48px; height: 48px; }
   .bm-title { font-size: 24px; }
-  .bm-how { padding: 8px 14px 12px; }
-  .bm-box .bm-points li { font-size: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .bm-call.pulse, .bm-mode.ready { animation: none; }
   .bm-toast { animation: bm-toast-fade 2.6s linear forwards; }
-  .bm-how-page.in-r, .bm-how-page.in-l, .bm-coach { animation: none; }
-  .bm-dots i, .bm-stick, .bm-flash { transition: none; }
+  .bm-coach { animation: none; }
+  .bm-stick, .bm-flash { transition: none; }
   .bm button:active { transform: none; }
 }
 @keyframes bm-toast-fade { 0% { opacity: 0; } 8% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+/* How to play: the shared guide (src/shell/guide.js), in the game's colours */
+.fg-guide.bm-guide {
+  --g-bg: var(--panel); --g-panel: var(--panel-2); --g-ink: var(--text); --g-muted: var(--muted); --g-line: var(--line);
+  --g-accent: var(--accent); --g-on-accent: #1a1205; --g-art-bg: #0e1420; --g-font: var(--font); --g-title-font: var(--font);
+}
+.fg-guide.bm-guide .fg-title { font-weight: 800; letter-spacing: -0.02em; }

@@ -1,0 +1,43 @@
+.po-home { --po-page:#101e2b; --po-well:#203448; --po-ink:#f0f2f4; --po-muted:#b6c3d0; --po-accent:#8cd3ed;
+  position:absolute; inset:0; overflow:auto; overscroll-behavior:contain; background:var(--po-page); color:var(--po-ink);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.po-collection { position:relative; width:100%; max-width:620px; min-height:100%; margin:auto;
+  padding:max(24px,var(--sat)) max(16px,var(--sar)) max(24px,var(--sab)) max(16px,var(--sal)); }
+.po-header { height:88px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.po-brand { display:flex; align-items:center; gap:8px; min-width:0; margin:0; }
+.po-window { width:54px; height:66px; object-fit:contain; flex-shrink:0; }
+.po-wordmark { width:196px; height:66px; object-fit:contain; min-width:0; }
+.po-sound { display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; }
+.po-sound img { width:16px; height:16px; }
+.po-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px 10px; margin-top:16px; }
+.po-game { min-width:0; }
+.po-art { display:flex; align-items:center; justify-content:center; width:100%; height:auto; aspect-ratio:323 / 312;
+  min-height:44px; border-radius:17px; background:var(--po-well); overflow:hidden; }
+.po-art svg { display:block; width:120.74%; height:99.04%; flex-shrink:0; }
+.po-summary { display:flex; flex-direction:column; align-items:stretch; width:100%; min-height:56px; padding-top:4px; text-align:center; }
+.po-name { display:block; min-height:22px; font-size:.78125rem; font-weight:650; line-height:1.28; letter-spacing:-.15px; padding:3px 0; overflow-wrap:anywhere; }
+.po-chevron { width:7px; height:7px; margin-left:3px; vertical-align:middle; }
+.po-genre { display:block; color:var(--po-muted); font-size:.71875rem; line-height:1.22; min-height:28px; padding:1px 1px 0; overflow-wrap:anywhere; }
+.po-version { position:absolute; right:max(12px,var(--sar)); bottom:max(3px,var(--sab)); font-size:10px; line-height:12px; color:#9eafbf; }
+.po-home button:focus-visible, .po-sheet button:focus-visible, .po-loading button:focus-visible { outline:3px solid #8cd3ed; outline-offset:3px; }
+.po-art:active { opacity:.85; }
+.po-summary:active { color:var(--po-accent); }
+.po-sheet { width:min(100%,480px); max-width:480px; max-height:calc(100% - max(24px,var(--sat))); margin:auto auto 0; padding:20px max(22px,var(--sal)) max(24px,var(--sab));
+  border:1px solid #354b60; border-bottom:0; border-radius:22px 22px 0 0; background:#101e2b; color:#f0f2f4; overflow:auto; }
+.po-sheet::backdrop { background:#0009; }
+.po-sheet-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.po-sheet h2 { font-size:24px; line-height:1.2; margin:0; }
+.po-sheet p { font-size:15px; line-height:1.6; color:#b6c3d0; margin:12px 0 22px; }
+.po-close { min-width:44px; min-height:44px; color:#b6c3d0; }
+.po-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.po-action { min-height:48px; min-width:88px; padding:12px 18px; background:#263c50; border-radius:10px; font-size:15px; }
+.po-primary { background:#8cd3ed; color:#101e2b; font-weight:650; }
+.fg-guide.po-guide { --g-bg:#101e2b; --g-panel:#203448; --g-ink:#f0f2f4; --g-muted:#b6c3d0; --g-accent:#8cd3ed; --g-line:#354b60; }
+.po-guide .fg-dot { width:44px; height:44px; }
+.po-loading { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:max(24px,var(--sat)) 24px max(24px,var(--sab)); background:#101e2b; color:#f0f2f4; text-align:center; }
+.po-loading h1 { font-size:24px; margin:0; }
+.po-loading p { color:#b6c3d0; margin:0; }
+.po-guide-status { font-size:14px; color:#b6c3d0; margin-top:16px; }
+@media (min-width:600px) { .po-collection { padding-top:max(40px,var(--sat)); padding-bottom:32px; } .po-grid { gap:20px 18px; margin-top:24px; } .po-summary { padding-top:7px; min-height:64px; } .po-name { font-size:1rem; } .po-genre { font-size:.8125rem; } }
+@media (max-width:350px) { .po-wordmark { width:calc(100vw - 170px); } .po-header { gap:8px; } }
+@media (max-height:650px) { .po-version { display:none; } }

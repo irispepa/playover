@@ -2,122 +2,205 @@ import './shell/shell.css';
 import { registerSW } from 'virtual:pwa-register';
 import { makeStorage } from './shell/storage.js';
 import { audio } from './shell/audio.js';
-import { cover } from './shell/covers.js';
-
-let offlineReady = false;
-let updateOfflineStatus = () => {};
-window.addEventListener('online', () => updateOfflineStatus());
-window.addEventListener('offline', () => updateOfflineStatus());
-registerSW({ immediate: true, onOfflineReady() { offlineReady = true; updateOfflineStatus(); } });
-if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(() => { offlineReady = true; updateOfflineStatus(); });
-
-// Each game is a lazily loaded module whose default export is
-//   { start(ctx) -> { dispose() } }       (see src/shell/CONTRACT.md)
-const GAMES = [
-  { id: 'everbrook', title: 'Everbrook', genre: 'Peaceful city builder', duration: 'An afternoon', tagline: 'Raise a peaceful river town from the first hearth to the age of steam. No wars, only neighbours.',
-    color: '#8fd06a', load: () => import('./games/everbrook/index.js') },
-  { id: 'lanternfall', title: 'Lanternfall', genre: 'Mystery visual novel', duration: '30–45 min', tagline: 'Seven days in a canal town. Make friends, sharpen your wits, and find who took the Moon Lantern.',
-    color: '#f29d7e', load: () => import('./games/lanternfall/index.js') },
-  { id: 'helpdesk', title: 'Patch & Kettle', genre: 'Cozy IT management', duration: '10 min sessions', tagline: 'Cozy IT for a house full of neighbours. Fix small things, introduce people, pet the server cat.',
-    color: '#f5c86a', load: () => import('./games/helpdesk/index.js') },
-  { id: 'oddcrown', title: 'Odd Crown', genre: 'Discovery chess', duration: '5–15 min', tagline: 'A secret rulebook. A suspicious king. Discover a different kind of chess each time.',
-    color: '#e9c78d', load: () => import('./games/oddcrown/index.js') },
-  { id: 'planets', title: 'Pocket Planets', genre: 'Merge puzzle', duration: 'One more turn', tagline: 'Slide moons into planets. Build a tiny universe, all the way to a sun.',
-    color: '#d6b0e8', load: () => import('./games/planets/index.js') },
-  { id: 'reef', title: 'Reef Relay', genre: 'Quiet puzzles', duration: '5–10 min', tagline: 'Turn coral channels, wake the pearls, and let a quiet current find its way.',
-    color: '#a5e6ce', load: () => import('./games/reef/index.js') },
-  { id: 'builder', title: 'Tidewater', tagline: 'Settle a generated island. Chain resources, weather storms, grow a colony.',
-    color: '#4cc9a0', load: () => import('./games/builder/index.js') },
-  { id: 'roguelike', title: 'Deepvault', tagline: 'Real-time dungeon descent. New floors, loot and monsters every run.',
-    color: '#f0b44c', load: () => import('./games/roguelike/index.js') },
-  { id: 'towerdefence', title: 'Bastion Maze', tagline: 'Build the maze, upgrade towers, and take the field yourself against endless waves.',
-    color: '#e25c5c', load: () => import('./games/towerdefence/index.js') },
-];
+import { GAMES } from './games.js';
+import { createHome, createInfo, el, button } from './shell/home.js';
+import { openGuide } from './shell/guide.js';
+import { loadGuide } from './shell/home-guides.js';
 
 const app = document.getElementById('app');
 const settings = makeStorage('shell');
 audio.setMuted(settings.get('muted', false));
 window.addEventListener('pointerdown', () => audio.unlock(), { passive: true });
-// Stop iOS pinch-zoom and double-tap zoom inside the app.
-document.addEventListener('gesturestart', (e) => e.preventDefault());
-document.addEventListener('dblclick', (e) => e.preventDefault());
 
-let current = null;
+let current = null, home = null, sheet = null, guide = null;
+let generation = 0;
+let route = { kind: 'home' };
+let position = history.state?.home || { scroll: 0, focus: '' };
+let updatePending = false, updateSW;
+const UPDATE_CHECK_MS = 30 * 60 * 1000;
 
-function el(tag, cls, text) {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-}
-
-function showMenu() {
-  if (current) { try { current.dispose(); } catch (err) { console.error(err); } current = null; }
-  app.replaceChildren();
-  const menu = el('div', 'menu');
-  const header = el('header', 'menu-head');
-  header.append(el('div', 'menu-mark', 'Your carry-on arcade'), el('h1', null, 'Flight Games'), el('div', 'sub', 'Nine little worlds. Take the long way home.'));
-  menu.append(header);
-  const grid = el('div', 'menu-grid');
-  for (const g of GAMES) {
-    const card = el('button', 'card');
-    card.style.setProperty('--card-color', g.color);
-    const illustration = el('div', 'card-art'); illustration.innerHTML = cover(g.id);
-    const copy = el('div', 'card-copy');
-    copy.append(el('div', 'card-genre', g.genre || ({ builder: 'Island builder', roguelike: 'Dungeon adventure', towerdefence: 'Tower defence' }[g.id])), el('div', 'title', g.title), el('div', 'tag', g.tagline));
-    const meta = el('div', 'card-meta'); meta.append(el('span', '', g.duration || 'Settle in'), el('span', 'card-play', 'Play'));
-    copy.append(meta); card.append(illustration, copy);
-    const best = makeStorage(g.id).get('bestLabel', null);
-    if (best) copy.append(el('div', 'best', best));
-    card.addEventListener('click', () => { audio.play('tap'); launch(g); });
-    grid.append(card);
+// The committed PWA workstream defers updates until idle Home.
+updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() { updatePending = true; applyUpdate(); },
+  onRegisteredSW(_url, registration) {
+    if (!registration) return;
+    let lastCheck = Date.now();
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !navigator.onLine || Date.now() - lastCheck < UPDATE_CHECK_MS) return;
+      lastCheck = Date.now();
+      registration.update().catch(() => {});
+    });
+  },
+});
+function applyUpdate() {
+  if (updatePending && route.kind === 'home' && updateSW) {
+    updatePending = false;
+    updateSW(true);
   }
-  menu.append(grid);
-  const foot = el('div', 'menu-foot');
-  const status = el('span');
-  updateOfflineStatus = () => { status.textContent = offlineReady ? '✓ All six games ready offline' : import.meta.env.DEV ? 'Local preview · offline cache in production' : navigator.onLine ? 'Preparing for offline play…' : 'Offline · reconnect once to finish caching'; };
-  updateOfflineStatus();
-  const mute = el('button', 'pill', audio.isMuted() ? 'Sound off' : 'Sound on');
-  mute.addEventListener('click', () => {
-    audio.setMuted(!audio.isMuted());
-    settings.set('muted', audio.isMuted());
-    mute.textContent = audio.isMuted() ? 'Sound off' : 'Sound on';
-    audio.play('tap');
-  });
-  foot.append(status, mute);
-  menu.append(foot);
-  menu.append(el('div', 'menu-note', 'No timers in the new puzzles. Progress saves as you play.'));
-  app.append(menu);
+}
+if (navigator.storage?.persisted && navigator.storage?.persist) {
+  navigator.storage.persisted().then((persisted) => persisted || navigator.storage.persist()).catch(() => {});
 }
 
-async function launch(game) {
+function gameFor(id) { return GAMES.find((game) => game.id === id); }
+function urlFor(next) {
+  const url = new URL(location.href);
+  for (const key of ['game', 'info', 'guide']) url.searchParams.delete(key);
+  if (next.kind !== 'home') url.searchParams.set(next.kind, next.id);
+  return url;
+}
+function readRoute() {
+  const query = new URLSearchParams(location.search);
+  for (const kind of ['game', 'guide', 'info']) {
+    const id = query.get(kind);
+    if (gameFor(id)) return { kind, id };
+  }
+  return { kind: 'home' };
+}
+function rememberHome() {
+  if (!home) return;
+  position.scroll = home.node.scrollTop;
+  const focused = document.activeElement;
+  if (focused?.id && home.node.contains(focused) && !sheet?.node.contains(focused)) position.focus = focused.id;
+}
+function navigate(next) {
+  rememberHome();
+  const index = (history.state?.playover ? history.state.index : 0) + 1;
+  history.replaceState({ ...history.state, home: { ...position } }, '', location.href);
+  history.pushState({ playover: true, index, home: { ...position } }, '', urlFor(next));
+  render(next);
+}
+function returnBack(fallback = { kind: 'home' }) {
+  if (history.state?.playover && history.state.index > 0) history.back();
+  else {
+    history.replaceState({ playover: true, index: 0, home: { ...position } }, '', urlFor(fallback));
+    render(fallback);
+  }
+}
+function disposeView() {
+  ++generation;
+  const oldGuide = guide;
+  guide = null;
+  oldGuide?.close();
+  sheet?.close();
+  sheet = null;
+  if (current) {
+    try { current.dispose(); } catch (error) { console.error(error); }
+    current = null;
+  }
+  home = null;
   app.replaceChildren();
+}
+function soundChanged() {
+  audio.setMuted(!audio.isMuted());
+  settings.set('muted', audio.isMuted());
+  audio.play('tap');
+}
+window.addEventListener('storage', (event) => {
+  if (event.key === 'flightgames:shell:muted' || event.key === null) {
+    audio.setMuted(settings.get('muted', false));
+    home?.updateSound();
+  }
+});
+
+function render(next) {
+  const previous = route;
+  rememberHome();
+  disposeView();
+  route = next;
+  const token = generation;
+  if (next.kind === 'game') {
+    if (!position.focus) position.focus = `play-${next.id}`;
+    launch(gameFor(next.id), token);
+    return;
+  }
+  home = createHome({
+    games: GAMES, audio, version: __APP_VERSION__, onSound: soundChanged,
+    onPlay: (game) => { position.focus = `play-${game.id}`; audio.play('tap'); navigate({ kind: 'game', id: game.id }); },
+    onInfo: (game) => { position.focus = `info-${game.id}`; navigate({ kind: 'info', id: game.id }); },
+  });
+  app.append(home.node);
+  home.node.scrollTop = position.scroll;
+  if (next.kind === 'home') {
+    document.getElementById(position.focus)?.focus({ preventScroll: true });
+    applyUpdate();
+    return;
+  }
+  const game = gameFor(next.id);
+  sheet = createInfo(home.node, game, {
+    onClose: () => returnBack(),
+    onPlay: () => { audio.play('tap'); navigate({ kind: 'game', id: game.id }); },
+    onGuide: () => navigate({ kind: 'guide', id: game.id }),
+  });
+  if (previous.kind === 'guide') sheet.guideButton.focus({ preventScroll: true });
+  if (previous.kind === 'game') sheet.playButton.focus({ preventScroll: true });
+  if (next.kind === 'guide') showHomeGuide(game, token);
+}
+
+async function showHomeGuide(game, token) {
+  const status = el('div', 'po-guide-status', 'Loading guide…');
+  status.setAttribute('role', 'status');
+  sheet.node.append(status);
+  try {
+    const options = await loadGuide(game.id, () => token === generation);
+    if (token !== generation) return;
+    status.remove();
+    guide = openGuide(home.node, {
+      ...options, className: `po-guide ${options.className || ''}`, doneLabel: 'Done',
+      onClose() {
+        if (token !== generation) return;
+        guide = null;
+        returnBack({ kind: 'info', id: game.id });
+      },
+    });
+  } catch (error) {
+    if (token !== generation) return;
+    console.error(error);
+    status.textContent = 'The guide could not load. ';
+    status.append(button('Retry', 'po-action', () => location.reload()),
+      button('Back', 'po-action', () => returnBack({ kind: 'info', id: game.id })));
+  }
+}
+
+async function launch(game, token) {
   const root = el('div', 'game-root');
-  const loading = el('div', 'load-msg', 'Loading…');
+  const loading = el('section', 'po-loading');
+  const heading = el('h1', '', game.title);
+  heading.tabIndex = -1;
+  const status = el('p', '', 'Loading…');
+  status.setAttribute('role', 'status');
+  const back = button('Back', 'po-action', () => returnBack());
+  loading.append(heading, status, back);
   root.append(loading);
   app.append(root);
+  heading.focus();
   try {
-    const mod = await game.load();
+    const module = await game.load();
+    if (token !== generation) return;
     const storage = makeStorage(game.id);
-    current = mod.default.start({
-      root,
-      storage,
-      audio,
-      exit: showMenu,
-      // Shown on the menu card, e.g. setBest('Best: floor 7').
-      setBest: (label) => storage.set('bestLabel', label),
-    }) || { dispose() {} };
+    const instance = module.default.start({ root, storage, audio, exit: () => {
+      if (token === generation) returnBack();
+    }, setBest: (label) => storage.set('bestLabel', label) }) || { dispose() {} };
+    if (token !== generation) { instance.dispose(); return; }
+    current = instance;
     loading.remove();
-  } catch (err) {
-    console.error(err);
-    loading.textContent = 'This game failed to start.';
-    const back = el('button', 'pill', 'Back');
-    back.style.cssText = 'position:absolute;left:50%;top:60%;transform:translateX(-50%)';
-    back.addEventListener('click', showMenu);
-    root.append(back);
+  } catch (error) {
+    if (token !== generation) return;
+    console.error(error);
+    root.replaceChildren(loading);
+    status.textContent = 'This game could not start.';
+    // Reload also clears the browser's cache of a rejected dynamic import.
+    loading.insertBefore(button('Retry', 'po-action po-primary', () => location.reload()), back);
+    heading.focus();
   }
 }
 
-// ?game=<id> opens a game directly (handy for testing and for home-screen shortcuts).
-const direct = GAMES.find((g) => g.id === new URLSearchParams(location.search).get('game'));
-if (direct) launch(direct); else showMenu();
+history.scrollRestoration = 'manual';
+history.replaceState({ playover: true, index: history.state?.playover ? history.state.index : 0, home: { ...position } }, '', location.href);
+window.addEventListener('popstate', () => {
+  if (history.state?.home) position = { ...history.state.home };
+  render(readRoute());
+});
+window.addEventListener('pagehide', (event) => { if (!event.persisted) disposeView(); });
+render(readRoute());

@@ -33,11 +33,13 @@ export const PRIORITY_NAMES = { first: 'First', last: 'Last', strong: 'Strong', 
 // ---------------------------------------------------------------------------------------------
 // Towers. `levels` are the base levels (cumulative: each entry overrides the previous one);
 // after the last base level the player picks branch a or b, whose levels continue the same way.
+// role: the short line in the build bar and tower sheet; tip: what it is good at (the Towers reference).
 // kind: bolt | shell | mortar | chain | snipe | rail | pulse | flame | aura | support | mine | none
 // ---------------------------------------------------------------------------------------------
 export const TOWERS = {
   wall: {
     name: 'Wall', cost: 5, color: '#8f8a7e', role: 'Cheap block. Shape the maze.',
+    tip: 'Cheap blocks that stretch the enemy path.',
     kind: 'none', air: false, ground: true,
     levels: [{ range: 0 }],
     branches: {
@@ -53,6 +55,7 @@ export const TOWERS = {
   },
   arrow: {
     name: 'Archer', cost: 25, color: '#c9a36b', role: 'Fast single target. Hits flyers.',
+    tip: 'Cheap, quick shots. Strong early and against flyers.',
     kind: 'bolt', dtype: 'phys', air: true, ground: true, projSpeed: 12,
     levels: [
       { dmg: 6, rate: 2.0, range: 2.6 },
@@ -72,6 +75,7 @@ export const TOWERS = {
   },
   cannon: {
     name: 'Cannon', cost: 50, color: '#6f7480', role: 'Splash damage. Ground only.',
+    tip: 'Blasts tight groups of ground enemies.',
     kind: 'shell', dtype: 'phys', air: false, ground: true, projSpeed: 7,
     levels: [
       { dmg: 16, rate: 0.7, range: 2.5, splash: 0.9 },
@@ -91,6 +95,7 @@ export const TOWERS = {
   },
   frost: {
     name: 'Frost', cost: 40, color: '#7fd8ff', role: 'Slows enemies. Hits flyers.',
+    tip: 'Slows enemies so other towers get more hits.',
     kind: 'bolt', dtype: 'cold', air: true, ground: true, projSpeed: 10,
     levels: [
       { dmg: 4, rate: 1.1, range: 2.5, slow: 0.35, slowDur: 2 },
@@ -110,6 +115,7 @@ export const TOWERS = {
   },
   tesla: {
     name: 'Tesla', cost: 70, color: '#c39bff', role: 'Chain lightning. Rips shields.',
+    tip: 'Chains through crowds and strips shields fast.',
     kind: 'chain', dtype: 'shock', air: true, ground: true,
     levels: [
       { dmg: 13, rate: 0.9, range: 2.4, jumps: 3, jumpRange: 1.6, falloff: 0.85 },
@@ -129,6 +135,7 @@ export const TOWERS = {
   },
   venom: {
     name: 'Venom', cost: 45, color: '#8be05a', role: 'Poison stacks. Ignores armour and shields.',
+    tip: 'Poison that ignores armour and shields.',
     kind: 'bolt', dtype: 'poison', air: true, ground: true, projSpeed: 9,
     levels: [
       { dmg: 2, rate: 1.0, range: 2.6, poison: 6, poisonDur: 4, poisonMax: 5 },
@@ -148,6 +155,7 @@ export const TOWERS = {
   },
   sniper: {
     name: 'Sniper', cost: 80, color: '#ffe07a', role: 'Huge range, pierces armour.',
+    tip: 'Huge range. Picks off the strongest, armour or not.',
     kind: 'snipe', dtype: 'pierce', air: true, ground: true, prio: 'strong',
     levels: [
       { dmg: 45, rate: 0.45, range: 5 },
@@ -167,6 +175,7 @@ export const TOWERS = {
   },
   mortar: {
     name: 'Mortar', cost: 75, color: '#9c7b5b', role: 'Long-range lobs. Cannot hit close or flyers.',
+    tip: 'Long-range splash. Cannot hit enemies right beside it.',
     kind: 'mortar', dtype: 'phys', air: false, ground: true, minRange: 1.5, flight: 1.0,
     levels: [
       { dmg: 30, rate: 0.4, range: 5.5, splash: 1.2 },
@@ -186,6 +195,7 @@ export const TOWERS = {
   },
   flame: {
     name: 'Flamer', cost: 60, color: '#ff7a2f', role: 'Short-range fire cone. Burns.',
+    tip: 'Burns crowds walking right past it.',
     kind: 'flame', dtype: 'fire', air: false, ground: true,
     levels: [
       { dmg: 5, rate: 5, range: 1.8, cone: 0.9, burn: 4, burnDur: 2 },
@@ -205,6 +215,7 @@ export const TOWERS = {
   },
   beacon: {
     name: 'Beacon', cost: 90, color: '#f0b44c', role: 'Buffs nearby towers.',
+    tip: 'Makes the towers around it hit harder.',
     kind: 'support', air: false, ground: false,
     levels: [
       { range: 1.6, buffDmg: 0.12 },
@@ -224,6 +235,7 @@ export const TOWERS = {
   },
   mine: {
     name: 'Gold Mine', cost: 60, color: '#e8c25a', role: 'Earns gold every wave.',
+    tip: 'Pays gold every wave. Best built early.',
     kind: 'mine', air: false, ground: false,
     levels: [
       { income: 11, range: 0 },
