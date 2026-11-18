@@ -27,6 +27,7 @@
 .po-sheet::backdrop { background:#0009; }
 .po-sheet-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .po-sheet h2 { font-size:24px; line-height:1.2; margin:0; }
+.po-sheet h2:focus { outline:none; }
 .po-sheet p { font-size:15px; line-height:1.6; color:#b6c3d0; margin:12px 0 22px; }
 .po-close { display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; color:#b6c3d0; }
 .po-close img { width:18px; height:18px; }

@@ -69,6 +69,8 @@ export function createInfo(home, game, { onClose, onPlay, onGuide }) {
   const header = el('div', 'po-sheet-head');
   const title = el('h2', '', game.title);
   title.id = 'po-info-title';
+  title.tabIndex = -1;
+  title.autofocus = true;
   sheet.setAttribute('aria-labelledby', title.id);
   const close = button('', 'po-close', onClose);
   close.setAttribute('aria-label', 'Close');
