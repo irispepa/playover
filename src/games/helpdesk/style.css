@@ -143,6 +143,7 @@
 .pk-rewards { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
 .pk-actions { display: flex; gap: 8px; margin-top: 10px; }
 .pk-actions .pk-btn { flex: 1; }
+.pk-trio .pk-btn { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 2px; padding: 8px 4px; font-size: 14px; white-space: nowrap; }
 
 /* ---------- mini-game frame ---------- */
 .pk-mg { position: absolute; inset: 0; z-index: 12; background: var(--cream); display: flex; flex-direction: column; animation: pk-fade 0.25s; }
@@ -377,4 +378,5 @@ svg .pk-pulse, svg .pk-shake { transform-box: fill-box; transform-origin: center
 .pk-guide .fg-back { box-shadow: 0 4px 0 #f0dfc4; }
 .pk-guide .fg-nav button:active { transform: translateY(3px) scale(0.98); }
 .pk-guide .fg-skip { color: var(--g-muted); }
+.fg-guide.pk-guide .fg-more { color: #b36b00; font-weight: 800; }
 .pk-guide .fg-title { margin: 4px 0 0; }

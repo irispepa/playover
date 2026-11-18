@@ -9,7 +9,8 @@ import { portrait, kettleSvg, EXTRA_LOOKS } from './art.js';
 import { houseSvg, kettlePoint, HOUSE_W, HOUSE_H } from './house.js';
 import { makeFx } from './fx.js';
 import { makeMusic } from './music.js';
-import { showGuide } from './guide.js';
+import { showGuide, showMoreTips } from './guide.js';
+import { MORE_LABEL } from '../../shell/guide.js';
 import mountCables from './games/cables.js';
 import { mountWifi, mountPrinter, mountReboot } from './games/hardware.js';
 import { mountPassword, mountInbox, mountDiagnosis, mountVideocall } from './games/people.js';
@@ -37,10 +38,15 @@ export function createApp(ctx) {
   const face = (id, size = 48, expr = 'smile') => portrait(TENANT_BY_ID[id].look, { size, expr, bg: '#ffe9b8' });
   const dayLabel = () => (s.day > S.CAMPAIGN_DAYS ? `Day ${s.day} · free play` : `Day ${s.day} · ${DAY_NAMES[(s.day - 1) % 5].slice(0, 3)}`);
   const startMusic = () => { if (settings.music && !ctx.audio.isMuted()) music.start(); };
-  function howToPlay() {
+  // `first` is the automatic showing on day one; it ends with a start label instead of "Got it".
+  function howToPlay(first = false) {
     if (guide && guide.open) return;
     store.set('guideSeen', true);
-    guide = showGuide(root, () => { guide = null; });
+    guide = showGuide(root, () => { guide = null; }, first === true);
+  }
+  function moreTips() {
+    if (guide && guide.open) return;
+    guide = showMoreTips(root, () => { guide = null; });
   }
 
   function save() {
@@ -548,7 +554,7 @@ export function createApp(ctx) {
     line('tickets', rep.newTickets.length ? `${plural(rep.newTickets.length, 'new ticket')} on the board, and ${plural(rep.hours, 'hour')} to spend.` : `No new tickets at all. ${plural(rep.hours, 'hour')} to spend however you like.`);
     card.append(l);
     const firstDay = s.day === 1;
-    const go = btn('pk-btn wide', 'Put the kettle on', () => { hub(); if (firstDay && !store.get('guideSeen', false)) howToPlay(); }, 'pop');
+    const go = btn('pk-btn wide', 'Put the kettle on', () => { hub(); if (firstDay && !store.get('guideSeen', false)) howToPlay(true); }, 'pop');
     go.style.marginTop = '8px';
     card.append(go);
     main.append(card);
@@ -586,9 +592,10 @@ export function createApp(ctx) {
     const tog = (label, key) => { const b = btn('pk-btn alt wide', '', () => { settings[key] = !settings[key]; store.set('settings', settings); if (key === 'music') { if (settings.music) startMusic(); else music.stop(); } draw(); }); const draw = () => { b.innerHTML = `${icon(settings[key] ? 'sound' : 'mute', 20)} ${label}: ${settings[key] ? 'on' : 'off'}`; }; draw(); b.style.marginBottom = '8px'; return b; };
     sh.body.append(tog('Music box', 'music'), tog('Sounds', 'sfx'));
     const hp = btn('pk-btn alt wide', `${icon('question', 20)} How to play`, () => { sh.close(); howToPlay(); }); hp.style.marginBottom = '8px';
+    const mt = btn('pk-btn alt wide', `${icon('bulb', 20)} ${MORE_LABEL}`, () => { sh.close(); moreTips(); }); mt.style.marginBottom = '8px';
     const sb = btn('pk-btn alt wide', `${icon('book', 20)} Scrapbook`, () => { sh.close(); scrapbook(); }); sb.style.marginBottom = '8px';
     const tt = btn('pk-btn alt wide', `${icon('door', 20)} Back to the title`, () => { sh.close(); save(); title(); });
-    sh.body.append(hp, sb, tt);
+    sh.body.append(hp, mt, sb, tt);
   }
   function scrapbook() {
     const sh = sheet({ title: 'Scrapbook', sub: `${plural(book.runs, 'Open Day')} so far${book.best ? ` · best ${book.best} points` : ''}` });
@@ -635,8 +642,8 @@ export function createApp(ctx) {
       acts.append(btn('pk-btn alt', 'Keep it', sh.close), btn('pk-btn', 'New game', () => { sh.close(); newGame(); }));
       sh.body.append(acts);
     }, 'pop'));
-    const row = el('<div class="pk-actions" style="margin:0"></div>');
-    row.append(btn('pk-btn alt', `${icon('book', 20)} Scrapbook`, scrapbook), btn('pk-btn alt', `${icon('door', 20)} Games`, () => ctx.exit()));
+    const row = el('<div class="pk-actions pk-trio" style="margin:0"></div>');
+    row.append(btn('pk-btn alt', `${icon('book', 20)} Scrapbook`, scrapbook), btn('pk-btn alt', `${icon('question', 20)} How to play`, () => howToPlay()), btn('pk-btn alt', `${icon('door', 20)} Games`, () => ctx.exit()));
     btns.append(row);
     main.append(scr);
   }

@@ -3,7 +3,7 @@ import { randomSeed } from '../../shell/rng.js';
 import { newGame, NAMES, TYPES, MOVES, ACTIONS, at, square, move, legalMoves, kingInDanger, reveal, remember, undo, chooseAI, validSave } from './sim.js';
 import { createBoard } from './render.js';
 import { openGuide } from '../../shell/guide.js';
-import { GUIDE_PAGES } from './guide.js';
+import { GUIDE_PAGES, MORE_PAGES } from './guide.js';
 import './guide.css';
 export default {
   start(ctx) {
@@ -219,6 +219,7 @@ export default {
         className: 'oddcrown-guide',
         pages: GUIDE_PAGES,
         doneLabel: 'Cause trouble',
+        more: MORE_PAGES,
         onClose: () => {
           guide = null;
         }

@@ -1,9 +1,11 @@
 // HTML overlay for Bastion Maze: HUD, tray, sheets, modals. No game rules here; it calls `h` handlers.
 import {
   TOWERS, TOWER_ORDER, ENEMIES, ABILITIES, CARD_BY_ID, CARD_KIND_NAMES, PRIORITIES, PRIORITY_NAMES, DTYPE_NAMES,
-  ARCHETYPES, ARCHETYPE_ORDER, DIFFICULTY, TILE_NAMES, TILE_INFO, HERO, HERO_WEAPONS, maxLevel, baseLevels, defaultMods,
+  ARCHETYPES, ARCHETYPE_ORDER, DIFFICULTY, TILE_NAMES, TILE_INFO, HERO, HERO_WEAPONS, OP, maxLevel, baseLevels,
 } from './data.js';
-import { ICON, towerIcon, enemyIcon } from './icons.js';
+import { ICON, towerIcon, enemyIcon, coreGem } from './icons.js';
+import { openGuide, MORE_LABEL } from '../../shell/guide.js';
+import { guidePages, morePages } from './guide.js';
 import {
   buildCost, upgradeInfo, sellValue, nextWaveSummary, canCallWave, earlyBonus, abilityList, heroStats, heroWeapons, cardStrength,
 } from './sim.js';
@@ -29,93 +31,21 @@ const fmt = (n) => {
 };
 const f1 = (n) => (n >= 100 ? fmt(n) : n >= 10 ? n.toFixed(0) : n.toFixed(1));
 
-// ---------------------------------------------------------------- art made in code (title emblem, guide diagrams)
-// Tile colours match render.js TILE_COL so the diagrams look like the map.
-const TILE_HEX = ['#5d7a46', '#6b6862', '#2c6fa0', '#6f6658', '#7f8f55', '#4f6272', '#6b5030', '#8a6a40', '#3a2d3a', '#3d4f66'];
-const iconInner = (s) => s.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
-const placeIcon = (s, x, y, size) => `<g transform="translate(${x} ${y}) scale(${size / 32})">${iconInner(s)}</g>`;
-const CORE_GEM = (cx, cy, r) => `<path d="M${cx} ${cy - r}l${r * 0.75} ${r}-${r * 0.75} ${r}-${r * 0.75}-${r}z" fill="#7fd8ff"/><path d="M${cx} ${cy - r}l${r * 0.3} ${r}-${r * 0.3} ${r}z" fill="#d8f6ff"/>`;
-
+// ---------------------------------------------------------------- title emblem and chevrons, drawn in code
 const EMBLEM = `<svg class="bm-emblem" viewBox="0 0 64 64" aria-hidden="true">
 <rect x="1" y="1" width="62" height="62" rx="15" fill="#162030" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
 <g fill="#8f8a7e"><rect x="9" y="9" width="18" height="5" rx="1.2"/><rect x="37" y="9" width="18" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="46" rx="1.2"/><rect x="50" y="9" width="5" height="46" rx="1.2"/><rect x="9" y="50" width="46" height="5" rx="1.2"/>
 <rect x="20" y="20" width="24" height="5" rx="1.2"/><rect x="20" y="20" width="5" height="24" rx="1.2"/><rect x="39" y="20" width="5" height="24" rx="1.2"/></g>
 <path d="M32 5 V17 H17 V47 H32 V40" fill="none" stroke="#f0b44c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.1 4.4"/>
 <path d="M27.5 8v-3.5a4.5 4.5 0 0 1 9 0V8" fill="none" stroke="#e25c5c" stroke-width="2.6"/>
-${CORE_GEM(32, 33, 7.5)}
+${coreGem(32, 33, 7.5)}
 </svg>`;
 
-const ARROW_R = '<svg class="bm-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CHEV_L = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CHEV_R = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-// rows: strings of '.' ground, 'w' wall, 'r' rock, 'G' gate, 'C' core. path: cell list, drawn as the dotted route.
-function gridSvg(rows, path, o = {}) {
-  const cs = 16, H = rows.length, W = rows[0].length;
-  let out = '';
-  rows.forEach((r, y) => [...r].forEach((ch, x) => {
-    const X = x * cs, Y = y * cs;
-    const fill = ch === 'r' ? TILE_HEX[1] : ch === 'G' ? TILE_HEX[8] : ch === 'C' ? TILE_HEX[9] : TILE_HEX[0];
-    out += `<rect x="${X + 0.5}" y="${Y + 0.5}" width="${cs - 1}" height="${cs - 1}" rx="2" fill="${fill}"/>`;
-    if (ch === 'w') out += `<rect x="${X + 1.5}" y="${Y + 1.5}" width="${cs - 3}" height="${cs - 3}" rx="1.5" fill="#8f8a7e"/><path d="M${X + 1.5} ${Y + cs / 2}h${cs - 3}" stroke="#5f5a52" stroke-width="1.2"/>`;
-    if (ch === 'G') out += `<path d="M${X + 4} ${Y + cs - 3}v-6a4 4 0 0 1 8 0v6" fill="none" stroke="#e25c5c" stroke-width="2.4"/>`;
-    if (ch === 'C') out += CORE_GEM(X + cs / 2, Y + cs / 2, 6);
-  }));
-  const pts = path.map(([x, y]) => `${x * cs + cs / 2},${y * cs + cs / 2}`).join(' ');
-  out += `<polyline points="${pts}" fill="none" stroke="#ffe07a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.1 4"/>`;
-  for (const [x, y] of o.enemies || []) out += `<circle cx="${x * cs + cs / 2}" cy="${y * cs + cs / 2}" r="3.6" fill="#d06a4a" stroke="#0e1420" stroke-width="1"/>`;
-  return `<svg class="bm-grid" viewBox="0 0 ${W * cs} ${H * cs}" aria-hidden="true">${out}</svg>`;
-}
-
-const badge = (n, x, y) => `<circle cx="${x}" cy="${y}" r="8" fill="#f0b44c"/><text x="${x}" y="${y + 3.6}" text-anchor="middle" font-size="10.5" font-weight="800" fill="#1a1205">${n}</text>`;
-
-// A mock of the top of the play screen, numbered to match the points on the page.
-const HUD_MOCK = (() => {
-  const box = (x, y, w, h, extra = '') => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="#101620" stroke="rgba(255,255,255,0.18)" ${extra}/>`;
-  let s = `<rect x="0.5" y="0.5" width="299" height="179" rx="14" fill="#25381f" stroke="rgba(255,255,255,0.15)"/>`;
-  s += `<path d="M20 150 H120 V110 H200" fill="none" stroke="#ffe07a" stroke-width="2" stroke-linecap="round" stroke-dasharray="0.1 5" opacity="0.7"/>`;
-  // row 1: menu, lives, gold ... pause/speed
-  s += box(8, 8, 22, 22) + placeIcon(ICON.menu, 11, 11, 16).replace(/currentColor/g, '#e8edf4');
-  s += box(34, 8, 44, 22) + placeIcon(ICON.heart, 38, 12, 14) + '<text x="56" y="23.5" font-size="11" font-weight="700" fill="#e8edf4">20</text>';
-  s += box(82, 8, 50, 22) + placeIcon(ICON.coin, 86, 12, 14) + '<text x="104" y="23.5" font-size="11" font-weight="700" fill="#e8edf4">250</text>';
-  s += box(232, 8, 60, 22) + placeIcon(ICON.pause, 238, 12, 14).replace(/currentColor/g, '#e8edf4') + '<text x="264" y="23.5" font-size="11" font-weight="700" fill="#e8edf4">1x</text>';
-  // row 2: wave, next preview, send
-  s += box(8, 36, 34, 22) + '<text x="25" y="51.5" text-anchor="middle" font-size="11" font-weight="700" fill="#e8edf4">4</text>';
-  s += box(46, 36, 180, 22) + '<text x="53" y="51" font-size="8.5" font-weight="800" fill="#9aa6b6">NEXT</text>';
-  s += placeIcon(enemyIcon('grunt'), 80, 40, 14) + placeIcon(enemyIcon('runner'), 110, 40, 14) + placeIcon(enemyIcon('wasp'), 140, 40, 14);
-  s += `<rect x="230" y="36" width="62" height="22" rx="5" fill="#2e6b52" stroke="#4cc9a0"/>` + placeIcon(ICON.play, 238, 41, 12).replace(/currentColor/g, '#e8edf4') + '<text x="254" y="51.5" font-size="11" font-weight="700" fill="#e8edf4">Send</text>';
-  // abilities column
-  [['meteor', 84], ['freeze', 114], ['rush', 144]].forEach(([id, y]) => {
-    s += `<circle cx="279" cy="${y + 12}" r="12" fill="#101620" stroke="rgba(240,180,76,0.7)"/>` + placeIcon(ICON[id], 271, y + 4, 16);
-  });
-  s += '<path d="M136 62 V58 M261 62 V58 M252 126 H267 M220 19 H232" stroke="#f0b44c" stroke-width="1.5"/>';
-  s += badge(1, 136, 70) + badge(2, 261, 70) + badge(3, 248, 126) + badge(4, 220, 19);
-  return `<svg class="bm-mock" viewBox="0 0 300 180" aria-hidden="true">${s}</svg>`;
-})();
-
-// Where the thumbs go in hero control.
-const HERO_MOCK = (() => {
-  let s = `<rect x="0.5" y="0.5" width="299" height="179" rx="14" fill="#25381f" stroke="rgba(255,255,255,0.15)"/>`;
-  s += `<rect x="1" y="1" width="149" height="178" rx="13" fill="rgba(63,208,192,0.10)"/><rect x="150" y="1" width="149" height="178" rx="13" fill="rgba(255,122,47,0.10)"/>`;
-  s += `<path d="M150 12 V168" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
-  // left stick
-  s += `<circle cx="80" cy="104" r="28" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.45)" stroke-width="2"/><circle cx="93" cy="95" r="11" fill="rgba(255,255,255,0.55)"/>`;
-  s += `<text x="80" y="156" text-anchor="middle" font-size="12.5" font-weight="800" fill="#bff5ec">Left thumb: move</text>`;
-  // right stick
-  s += `<circle cx="200" cy="104" r="28" fill="rgba(255,255,255,0.06)" stroke="rgba(255,122,47,0.7)" stroke-width="2"/><circle cx="187" cy="93" r="11" fill="rgba(255,140,70,0.7)"/>`;
-  s += `<text x="218" y="156" text-anchor="middle" font-size="12.5" font-weight="800" fill="#ffd2b0">Right thumb: aim</text>`;
-  // hero between the sticks
-  s += placeIcon(ICON.hero, 128, 88, 26);
-  // build button top left, hero buttons right column
-  s += `<rect x="8" y="8" width="38" height="38" rx="10" fill="rgba(63,208,192,0.2)" stroke="#3fd0c0"/>` + placeIcon(ICON.build, 15, 11, 24) + '<text x="52" y="31" font-size="10" font-weight="700" fill="#cfd8e4">Build</text>';
-  [['dash', 14, 'Dash'], ['nova', 48, 'Nova'], ['swap', 82, 'Swap']].forEach(([id, y, l]) => {
-    s += `<circle cx="279" cy="${y + 12}" r="12" fill="#101620" stroke="rgba(255,255,255,0.3)"/>` + placeIcon(ICON[id], 271, y + 4, 16).replace(/currentColor/g, '#e8edf4');
-    s += `<text x="261" y="${y + 15.5}" text-anchor="end" font-size="9" font-weight="700" fill="#cfd8e4">${l}</text>`;
-  });
-  return `<svg class="bm-mock" viewBox="0 0 300 180" aria-hidden="true">${s}</svg>`;
-})();
-
-export function createHud(ui, h) {
+// host: the game root, where the guide dialog goes.
+export function createHud(ui, h, host) {
   const rootEl = el('div', 'bm');
   ui.appendChild(rootEl);
 
@@ -195,6 +125,10 @@ export function createHud(ui, h) {
     cards[type] = c;
     tray.appendChild(c);
   }
+  // Last in the tray: the Towers reference.
+  const infoCard = btn('bm-card bm-info', `${ICON.info}<span class="nm">All towers</span>`, () => h.showTowers());
+  infoCard.setAttribute('aria-label', 'Towers: what each one does');
+  tray.appendChild(infoCard);
   bottom.append(ctx, tray);
   rootEl.appendChild(bottom);
 
@@ -222,7 +156,8 @@ export function createHud(ui, h) {
   const targetMsg = el('div', 'bm-target bm-hidden', 'Tap the map to aim');
   rootEl.append(flash, toasts, targetMsg);
 
-  let sheet = null, modal = null, titleOn = false;
+  let sheet = null, modal = null, titleOn = false, guide = null, disposed = false;
+  let liveS = null; // the run the HUD last drew, for live tower costs in the Towers reference (null on the title)
   const floats = [];
   for (let i = 0; i < 16; i++) { const f = el('div', 'bm-float'); f.style.opacity = '0'; rootEl.appendChild(f); floats.push({ el: f, t: 0, x: 0, y: 0 }); }
   let floatHead = 0;
@@ -235,6 +170,7 @@ export function createHud(ui, h) {
 
   function update(s, c, dt) {
     if (titleOn) { titleOn = false; rootEl.classList.remove('bm-title-on'); }
+    liveS = s;
     setText('lives', lives.lastChild, fmt(s.lives));
     setText('gold', gold.lastChild, fmt(s.gold));
     setText('wave', wave.lastChild, String(s.wave));
@@ -371,7 +307,7 @@ export function createHud(ui, h) {
 
   function updateCoach(s, c, heroMode) {
     let tray = '', call = '';
-    if (!c.settings.seenCoach && s.wave === 0 && !heroMode && !modal && !sheet && !c.targeting) {
+    if (!c.settings.seenCoach && s.wave === 0 && !heroMode && !modal && !guide && !sheet && !c.targeting) {
       if (s.stats.built > 0) call = 'Build more if you like, then press <b>Start</b> to send the first wave.';
       else if (c.armed && c.selTile >= 0) tray = 'Press <b>Build</b> to place it.';
       else if (c.armed) tray = `Now tap an open tile on the map to place the ${TOWERS[c.armed].name}.`;
@@ -436,7 +372,11 @@ export function createHud(ui, h) {
     const brName = t.branch ? d.branches[t.branch].name : '';
     box.replaceChildren();
     const head = el('div', 'bm-sh-head', `<div class="ic">${towerIcon(t.type)}</div><div class="t"><b>${brName || d.name}</b><span>Level ${t.level}/${maxLevel(t.type)}${brName ? ' · ' + d.name : ''} · ${t.jamT > 0 ? '<span style="color:#ff8a8a">Jammed</span>' : d.role}</span></div>`);
-    head.appendChild(btn('bm-x', ICON.close, () => h.closeSheet()));
+    const allB = btn('bm-x', ICON.info, () => h.showTowers());
+    allB.setAttribute('aria-label', 'All towers');
+    const x = btn('bm-x', ICON.close, () => h.closeSheet());
+    x.setAttribute('aria-label', 'Close');
+    head.append(allB, x);
     box.appendChild(head);
     const stats = el('div', 'bm-stats');
     const add = (k, v) => stats.appendChild(el('div', 'bm-stat', `<small>${k}</small><b>${v}</b>`));
@@ -567,6 +507,8 @@ export function createHud(ui, h) {
 
   // ---------------------------------------------------------------- modals
   function closeModal() { if (modal) { modal.remove(); modal = null; } }
+  // Escape on a modal that sits over another one (the Towers reference over the pause menu) goes back to it.
+  function back() { if (modal && modal.bmBack) { modal.bmBack(); return true; } return false; }
   function openModal(build) {
     closeModal();
     modal = el('div', 'bm-modal');
@@ -610,7 +552,8 @@ export function createHud(ui, h) {
       tog('Screen shake', c.settings.shake, () => { h.toggleSetting('shake'); showPause(c); });
       tog('Show enemy path', c.settings.paths, () => { h.toggleSetting('paths'); showPause(c); });
       const row = el('div', 'bm-row2');
-      row.append(btn('bm-btn', 'How to play', () => showHow(() => showPause(c))),
+      row.append(btn('bm-btn', 'How to play', () => showHow()), btn('bm-btn', MORE_LABEL, () => showMore()),
+        btn('bm-btn', 'Towers', () => showTowers(c.s, () => showPause(c))),
         btn('bm-btn', 'Restart run', () => confirmBox('Restart this run?', 'You lose the progress on this run and start again on the same settings.', 'Restart', () => h.restart(), () => showPause(c))));
       box.appendChild(row);
       box.appendChild(btn('bm-btn', 'Save and exit to menu', () => h.exitToMenu()));
@@ -635,167 +578,75 @@ export function createHud(ui, h) {
     });
   }
 
-  // ---------------------------------------------------------------- how to play (paged, illustrated)
-  function howPages() {
-    const sellPct = Math.round(defaultMods().sellRate * 100);
-    const arrowT = TOWERS.arrow;
-    const towerRows = TOWER_ORDER.map((k) => {
-      const d = TOWERS[k];
-      return `<div class="bm-trow">${towerIcon(k)}<div><b>${d.name}</b><span>${d.role}</span></div>${d.air ? '<em class="bm-air">Air</em>' : ''}</div>`;
-    }).join('');
-    const enemyRow = (type, text) => `<div class="bm-trow">${enemyIcon(type)}<div><b>${ENEMIES[type].name}</b><span>${text}</span></div></div>`;
-    const tileRow = (t, text) => `<div class="bm-trow"><i class="bm-sw" style="background:${TILE_HEX[t]}"></i><div><b>${TILE_NAMES[t]}</b><span>${text}</span></div></div>`;
-    const card = (kind, id) => {
-      const c = CARD_BY_ID[id];
-      return `<div class="bm-mcard ${kind}"><small>${CARD_KIND_NAMES[kind]}</small><b>${c.name}</b><span>${c.text(1)}</span></div>`;
-    };
-    return [
-      {
-        title: 'Defend the core',
-        pic: gridSvg(['..r......', 'G.......C', '.....r...'], [[0, 1], [8, 1]], { enemies: [[1.6, 1], [3.1, 1], [4.4, 1]] }),
-        points: [
-          'Enemies walk from the red gate to your crystal core.',
-          'Each one that gets through costs lives. Bosses cost many.',
-          'Kills and cleared waves pay gold. Spend it on towers.',
-          'The waves never end. See how far you get.',
-        ],
-      },
-      {
-        title: 'Build the maze',
-        pic: `<div class="bm-pic2">${gridSvg(['.......', '.......', 'G.....C', '.......', '.......'], [[0, 2], [6, 2]])}${ARROW_R}${gridSvg(['....w..', '..w.w..', 'G.w.w.C', '..w.w..', '..w....'], [[0, 2], [1, 2], [1, 0], [3, 0], [3, 4], [5, 4], [5, 2], [6, 2]])}</div>`,
-        points: [
-          '<b>Tap a tile</b>, pick a tower in the tray, then press <b>Build</b>.',
-          'Every building blocks its tile. Enemies on foot take the shortest open route, shown as a dotted line.',
-          'Walls are cheap. Use them to make the route long.',
-          'You can never close the last route. The preview turns red.',
-        ],
-      },
-      {
-        title: 'Read the ground',
-        lead: 'Tap any tile on the map to see what it is.',
-        pic: `<div class="bm-list">${tileRow(4, 'Towers here get +20% range.')}${tileRow(5, 'Towers here deal +25% damage.')}${tileRow(6, 'Enemies wade at half speed. No building.')}${tileRow(2, 'Only flyers cross it.')}${tileRow(1, 'Blocks walking and building, like ruins.')}</div>`,
-        points: [],
-      },
-      {
-        title: 'Towers',
-        lead: 'Flyers ignore the maze. Only towers marked <em class="bm-air">Air</em> can hit them.',
-        pic: `<div class="bm-list bm-list-s">${towerRows}</div>`,
-        points: [],
-      },
-      {
-        title: 'Upgrade and sell',
-        pic: `<div class="bm-branchpic"><div class="bm-bp-src">${towerIcon('arrow')}<b>${arrowT.name}</b><small>Level ${baseLevels('arrow')}</small></div>${ARROW_R}<div class="bm-bp-col"><div class="bm-mcard perk"><b>${arrowT.branches.a.name}</b><small>${arrowT.branches.a.desc}</small></div><div class="bm-mcard perk"><b>${arrowT.branches.b.name}</b><small>${arrowT.branches.b.desc}</small></div></div></div>`,
-        points: [
-          '<b>Tap a tower</b> to see its stats, upgrade it, sell it or choose what it targets.',
-          'After its last base level, pick one of two specialisations. The choice is permanent.',
-          `Selling pays back ${sellPct}%. Towers built since the last wave refund in full.`,
-        ],
-      },
-      {
-        title: 'Know the enemy',
-        pic: `<div class="bm-list bm-list-s">${enemyRow('wasp', 'Flies over the maze. Needs Air towers.')}${enemyRow('knight', 'Armour shrinks every hit. Use Sniper, Venom or big hits.')}${enemyRow('warden', 'Shield regrows. Shock from Tesla tears it twice as fast.')}${enemyRow('shade', 'Hidden. Hunter, Lookout, Beacon level 3 or splash reveal it.')}${enemyRow('mender', 'Heals nearby enemies. Kill it first.')}${enemyRow('sapper', 'Jams towers it walks past.')}</div>`,
-        points: [
-          'A boss comes every 10th wave.',
-          'Chilled or frozen enemies take extra physical damage. Tar doubles fire damage.',
-        ],
-      },
-      {
-        title: 'Waves and abilities',
-        pic: HUD_MOCK,
-        points: [
-          { n: 1, t: 'The next wave. Tap it to see who is coming.' },
-          { n: 2, t: 'Press <b>Send</b> to call the next wave early for bonus gold.' },
-          { n: 3, t: 'Abilities recharge over time. For Meteor, tap it, then the map.' },
-          { n: 4, t: 'Pause and speed: 1x, 2x, 4x. You can build while paused.' },
-        ],
-      },
-      {
-        title: 'Cards',
-        pic: `<div class="bm-cardpic">${card('perk', 'drill')}${card('econ', 'chest')}${card('relic', 'hourglass')}</div>`,
-        points: [
-          'Every 5 waves you pick one of three cards. In Overpowered, every 3.',
-          'Perks can stack, relics are one of a kind, economy cards boost your gold.',
-          'Curses trade a risk for a reward.',
-        ],
-      },
-      {
-        title: 'The hero',
-        pic: HERO_MOCK,
-        points: [
-          `From wave ${HERO.unlockWave}, tap <b>Deploy</b> on the left. In Overpowered the hero starts in play.`,
-          'Left thumb moves. Right thumb aims and fires. Let go and the hero aims by itself.',
-          'Dash dodges, Nova stuns everything nearby, Swap changes weapon.',
-          'Tap the hero card to spend level-up points. <b>Build</b> takes you back to building.',
-        ],
-      },
-    ];
+  // ---------------------------------------------------------------- how to play (shared guide cards)
+  // The guide is a modal <dialog> in the game root (outside .bm, which ignores pointer events). It sits over
+  // the title or pause menu, which stay underneath; onClose runs when it is dismissed, unless the HUD is gone.
+  // The main guide offers the More tips cards on its last card; showMore opens them on their own. Both use
+  // the same `guide` slot, so the game pauses and ignores the board and keys the same way for either.
+  function showHow(onClose, opts = {}) {
+    if (guide) return;
+    guide = openGuide(host, {
+      className: 'bm-guide',
+      pages: guidePages(),
+      more: morePages(),
+      doneLabel: opts.doneLabel || 'Got it',
+      onClose: () => { guide = null; if (!disposed && onClose) onClose(); },
+    });
+  }
+  function showMore(onClose) {
+    if (guide) return;
+    guide = openGuide(host, {
+      className: 'bm-guide',
+      pages: morePages(),
+      label: MORE_LABEL,
+      doneLabel: 'Got it',
+      onClose: () => { guide = null; if (!disposed && onClose) onClose(); },
+    });
   }
 
-  function showHow(onClose, opts = {}) {
-    const pages = howPages();
-    let page = 0;
-    const done = () => { closeModal(); onClose && onClose(); };
-    openModal((box) => {
-      box.classList.add('bm-how');
-      box.setAttribute('role', 'dialog');
-      box.setAttribute('aria-label', 'How to play');
-      const head = el('div', 'bm-how-head');
-      const dots = el('div', 'bm-dots');
-      dots.setAttribute('aria-hidden', 'true');
-      for (let i = 0; i < pages.length; i++) dots.appendChild(el('i'));
-      const count = el('span', 'bm-sr');
-      count.setAttribute('aria-live', 'polite');
-      const skip = btn('bm-skip', 'Skip', done);
-      head.append(dots, count, skip);
-      const body = el('div', 'bm-how-body');
-      const nav = el('div', 'bm-how-nav');
-      const back = btn('bm-btn', 'Back', () => go(page - 1));
-      const next = btn('bm-btn pri', 'Next', () => (page < pages.length - 1 ? go(page + 1) : done()));
-      nav.append(back, next);
-      box.append(head, body, nav);
-
-      function go(p, dir = p > page ? 1 : -1) {
-        if (p < 0 || p >= pages.length) return;
-        page = p;
-        const pg = pages[p];
-        const inner = el('div', 'bm-how-page ' + (dir > 0 ? 'in-r' : 'in-l'));
-        inner.appendChild(el('h2', null, pg.title));
-        if (pg.lead) inner.appendChild(el('p', 'bm-lead', pg.lead));
-        inner.appendChild(el('div', 'bm-pic', pg.pic));
-        const ul = el('ul', 'bm-points');
-        for (const pt of pg.points) {
-          if (typeof pt === 'string') ul.appendChild(el('li', null, pt));
-          else ul.appendChild(el('li', 'num', `<span class="bm-num">${pt.n}</span><span>${pt.t}</span>`));
-        }
-        if (pg.points.length) inner.appendChild(ul);
-        body.replaceChildren(inner);
-        body.scrollTop = 0;
-        [...dots.children].forEach((d, i) => d.classList.toggle('on', i === p));
-        count.textContent = `Page ${p + 1} of ${pages.length}`;
-        back.classList.toggle('bm-invis', p === 0);
-        back.disabled = p === 0;
-        const last = p === pages.length - 1;
-        next.textContent = last ? (opts.doneLabel || 'Got it') : 'Next';
-        skip.classList.toggle('bm-invis', last);
+  // ---------------------------------------------------------------- Towers reference (every tower, from data.js)
+  // s: the current run for live costs, or null (title: base costs). onClose: where Close and Escape go back to;
+  // without it the modal just closes (opened from the tray or a tower sheet during play).
+  function towerTags(d) {
+    const L = d.levels[0], tags = [];
+    if (d.kind === 'none') tags.push('Blocks path');
+    else if (d.kind === 'support') tags.push('Support');
+    else if (d.kind === 'mine') tags.push('Income');
+    else tags.push(d.air ? 'Hits air' : 'Ground only');
+    if (L.splash) tags.push('Splash');
+    if (L.slow) tags.push('Slows');
+    if (L.jumps) tags.push('Chains');
+    if (L.poison) tags.push('Poison');
+    if (L.burn) tags.push('Burns');
+    if (d.dtype === 'pierce') tags.push('Pierces');
+    return tags;
+  }
+  function showTowers(s, onClose) {
+    const box = openModal((b) => {
+      b.classList.add('bm-towers');
+      const head = el('div', 'bm-mhead');
+      head.appendChild(el('h2', null, 'Towers'));
+      head.appendChild(el('div', 'bm-spacer'));
+      const x = btn('bm-x', ICON.close, done);
+      x.setAttribute('aria-label', 'Close');
+      head.appendChild(x);
+      b.appendChild(head);
+      const off = Math.round((1 - OP.buildCost) * 100);
+      b.appendChild(el('p', 'bm-desc', `Every tower blocks its tile. ${s ? 'Costs for this run.' : `${off}% off in Overpowered.`}`));
+      const list = el('div', 'bm-list bm-tlist');
+      for (const type of TOWER_ORDER) {
+        const d = TOWERS[type];
+        const tags = towerTags(d).map((t) => `<em class="${t === 'Hits air' ? 'bm-air' : 'bm-tg'}">${t}</em>`).join('');
+        const cost = s ? buildCost(s, type) : d.cost;
+        list.appendChild(el('div', 'bm-trow', `${towerIcon(type)}<div><div class="bm-tname"><b>${d.name}</b>${tags}</div><span>${d.tip}</span></div><span class="bm-cost">${ICON.coin}<span>${fmt(cost)}</span></span>`));
       }
-      // swipe between pages
-      let sx = 0, sy = 0, sid = null;
-      box.addEventListener('pointerdown', (e) => { sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
-      box.addEventListener('pointerup', (e) => {
-        if (e.pointerId !== sid) return;
-        sid = null;
-        const dx = e.clientX - sx, dy = e.clientY - sy;
-        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(page + (dx < 0 ? 1 : -1));
-      });
-      box.addEventListener('pointercancel', () => { sid = null; });
-      box.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') { e.stopPropagation(); go(page + 1); }
-        else if (e.key === 'ArrowLeft') { e.stopPropagation(); go(page - 1); }
-      });
-      go(0, 1);
-      box.tabIndex = -1;
-      requestAnimationFrame(() => box.focus({ preventScroll: true }));
+      b.appendChild(list);
+      b.appendChild(btn('bm-btn pri', 'Close', done));
     });
+    if (!s) modal.classList.add('bm-tmodal');
+    modal.bmBack = done;
+    function done() { closeModal(); if (!disposed && onClose) onClose(); }
+    return box;
   }
 
   function showWaveInfo(s, onClose) {
@@ -842,6 +693,7 @@ export function createHud(ui, h) {
     if (!DIFFICULTY[diff]) diff = 'normal';
     if (arch !== 'random' && !ARCHETYPES[arch]) arch = 'random';
     titleOn = true;
+    liveS = null;
     rootEl.classList.add('bm-title-on');
     const MODES = {
       std: ['Standard', 'Choose a difficulty and a map. Records are kept per difficulty.'],
@@ -946,16 +798,20 @@ export function createHud(ui, h) {
       const foot = el('div', 'bm-foot');
       const how = btn('bm-btn', 'How to play', () => showHow(render));
       how.dataset.fk = 'how';
-      foot.append(how, btn('bm-btn', 'Back to games', () => o.onExit()));
+      const more = btn('bm-btn', MORE_LABEL, () => showMore(render));
+      more.dataset.fk = 'more';
+      const towers = btn('bm-btn', 'Towers', () => showTowers(null, render));
+      towers.dataset.fk = 'towers';
+      foot.append(how, more, towers, btn('bm-btn', 'Back to games', () => o.onExit()));
       box.appendChild(foot);
     }
     render();
   }
 
   return {
-    update, toast, float, hurtFlash, setStick, closeSheet, openTowerSheet, openHeroSheet, closeModal, showCards, showPause,
-    showHow, showGameOver, showTitle, showWaveInfo,
-    get sheet() { return sheet; }, get modal() { return modal; },
+    update, toast, float, hurtFlash, setStick, closeSheet, openTowerSheet, openHeroSheet, closeModal, back, showCards, showPause,
+    showHow, showMore, showGameOver, showTitle, showWaveInfo, showTowers: (onClose) => showTowers(liveS, onClose),
+    get sheet() { return sheet; }, get modal() { return modal; }, get guideOpen() { return !!guide; },
     insets() {
       const r = rootEl.getBoundingClientRect();
       const tb = top.getBoundingClientRect();
@@ -963,6 +819,6 @@ export function createHud(ui, h) {
       return { top: tb.bottom - r.top + 6, bottom: bottom.classList.contains('bm-hidden') ? 20 : r.bottom - bb.top + 6, rootTop: r.top };
     },
     rect() { return rootEl.getBoundingClientRect(); },
-    dispose() { for (const id of timeouts) clearTimeout(id); timeouts.clear(); rootEl.remove(); },
+    dispose() { disposed = true; if (guide) guide.close(); for (const id of timeouts) clearTimeout(id); timeouts.clear(); rootEl.remove(); },
   };
 }

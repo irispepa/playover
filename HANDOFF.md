@@ -14,7 +14,7 @@
 No multi-session plan. A Codex review pass is planned before deploying. The owner also wants a new, ambitious full three.js game (see Next steps).
 
 ## Branch / Worktree
-- `main` at `/Users/irispepa/Projects/flight-games` holds all nine games, the Everbrook path fix (`763f565`) and the How to play guides for the six newer games (merged from `claude/playover-missing-tutorials-ca78d7`). There is no remote.
+- `main` at `/Users/irispepa/Projects/flight-games` holds all nine games, the Everbrook path fix (`763f565`) and short How to play guides for all nine games on the shared `src/shell/guide.js` (merged from `claude/playover-missing-tutorials-ca78d7`). There is no remote.
 - Merged and removable: `codex/pocket-games-expansion` (`/Users/irispepa/.codex/worktrees/8ebe/flight-games`), `claude/flight-games-ui-polish-a614ec` and `claude/niko-game-collection-2eb773` (both under `.claude/worktrees/`). Kept for now because Codex may use its worktree for the review and another session may still be in the Niko one.
 
 ## Status
@@ -29,12 +29,11 @@ Nine games on `main`: Tidewater, Deepvault, Bastion Maze, Odd Crown, Pocket Plan
 - Visual checks: use a private headless Chrome over CDP, as in `docs/history.md` (session 2).
 
 ## Next steps
-1. Shorten the How to play guides of Tidewater, Deepvault and Bastion Maze onto the shared `src/shell/guide.js` (3–5 cards, 1–2 short lines each), and add How to play to Patch & Kettle's title screen. The owner wants this next.
-2. Codex review pass of the whole app before deploying.
-3. New game: a full three.js game that uses the model's strengths to the max (proposal pending the owner's choice).
-4. Pick HTTPS hosting (needs the owner's go-ahead), install on an iPhone, check touch feel, safe areas, frame rate and airplane-mode reopening.
-5. Remove the merged branches and worktrees once the Codex review is done.
-6. Work through `docs/wishlist.md`.
+1. Codex review pass of the whole app before deploying.
+2. New game: a full three.js game that uses the model's strengths to the max (proposal pending the owner's choice).
+3. Pick HTTPS hosting (needs the owner's go-ahead), install on an iPhone, check touch feel, safe areas, frame rate and airplane-mode reopening.
+4. Remove the merged branches and worktrees once the Codex review is done.
+5. Work through `docs/wishlist.md`.
 
 ## Key decisions
 - PWA, offline, no asset files: all art, models and sounds are made in code.

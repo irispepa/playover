@@ -5,17 +5,23 @@
 //     className: 'my-guide',                  // optional: set --g-* colour variables on it
 //     pages: [{ title: 'Tap to flip', art: '<svg viewBox="0 0 200 120">…</svg>', points: ['Short line.', 'Another.'] }],
 //     doneLabel: 'Play',                      // last card's primary button
-//     onClose(finished) {},                   // finished: true if the last card's button was used
+//     more: [ /* pages */ ],                  // optional: extra "More tips" cards, offered by a link on the last card
+//     label: 'More tips',                     // optional: a name shown before the card count
+//     onClose(finished) {},                   // finished: true when closed by the last card's button or from More tips
 //   });
 //   g.close();                                // safe to call twice; call from the game's dispose()
 //
+// To open the extra cards on their own (from a menu): openGuide(root, { pages: more, label: 'More tips', ... }).
 // Theme variables (all optional): --g-bg --g-panel --g-ink --g-muted --g-line --g-accent --g-on-accent
 // --g-font --g-title-font --g-art-bg. Keep `points` to one or two lines of about 12 words.
 import './guide.css';
 
-export function openGuide(root, { pages, className = '', doneLabel = 'Play', onClose } = {}) {
+export const MORE_LABEL = 'More tips';
+
+export function openGuide(root, { pages, more = null, className = '', doneLabel = 'Play', label = '', onClose } = {}) {
   if (!pages?.length) throw new Error('openGuide: pages required');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const uid = Math.random().toString(36).slice(2, 8);
   const dlg = document.createElement('dialog');
   dlg.className = `fg-guide ${className}`.trim();
   dlg.setAttribute('aria-roledescription', 'guide');
@@ -25,72 +31,102 @@ export function openGuide(root, { pages, className = '', doneLabel = 'Play', onC
   const skip = btn('Skip', 'fg-skip');
   top.append(count, skip);
 
-  // Every card is built up front and stacked in one grid cell, so the guide keeps the height of
-  // its tallest card and does not jump while paging.
-  const stack = el('div', 'fg-stack');
-  const uid = Math.random().toString(36).slice(2, 8);
-  const cards = pages.map((p, k) => {
-    const card = el('div', 'fg-card');
-    if (p.art) {
-      const art = el('div', 'fg-art');
-      art.setAttribute('aria-hidden', 'true');
-      art.innerHTML = p.art;
-      card.append(art);
-    }
-    const title = el('h2', 'fg-title', p.title);
-    title.id = `fg-title-${uid}-${k}`;
-    const list = el('ul', 'fg-points');
-    list.append(...(p.points || []).map((t) => el('li', '', t)));
-    card.append(title, list);
-    stack.append(card);
-    return card;
-  });
+  // A section is one run of cards. Its cards are stacked in one grid cell, so the guide keeps the
+  // height of the section's tallest card and does not jump while paging.
+  const sections = [section(pages, label, 'a')];
+  if (more?.length) sections.push(section(more, MORE_LABEL, 'b'));
+  function section(list, name, key) {
+    const stack = el('div', 'fg-stack');
+    const cards = list.map((p, k) => {
+      const card = el('div', 'fg-card');
+      if (p.art) {
+        const art = el('div', 'fg-art');
+        art.setAttribute('aria-hidden', 'true');
+        art.innerHTML = p.art;
+        card.append(art);
+      }
+      const title = el('h2', 'fg-title', p.title);
+      title.id = `fg-title-${uid}-${key}${k}`;
+      const ul = el('ul', 'fg-points');
+      ul.append(...(p.points || []).map((t) => el('li', '', t)));
+      card.append(title, ul);
+      stack.append(card);
+      return card;
+    });
+    const dots = el('div', 'fg-dots');
+    const dotEls = list.map((_, k) => {
+      const d = btn('', 'fg-dot');
+      d.setAttribute('aria-label', `Card ${k + 1} of ${list.length}`);
+      d.addEventListener('click', () => go(k));
+      dots.append(d);
+      return d;
+    });
+    return { stack, cards, dots, dotEls, name, key };
+  }
 
-  const dots = el('div', 'fg-dots');
-  const dotEls = pages.map((_, i) => {
-    const d = btn('', 'fg-dot');
-    d.setAttribute('aria-label', `Card ${i + 1} of ${pages.length}`);
-    d.addEventListener('click', () => go(i));
-    dots.append(d);
-    return d;
-  });
-
+  const moreLink = btn(`${MORE_LABEL} →`, 'fg-more');
   const nav = el('div', 'fg-nav');
   const back = btn('Back', 'fg-back');
   const next = btn('Next', 'fg-next');
   nav.append(back, next);
 
-  dlg.append(top, stack, dots, nav);
+  dlg.append(top);
+  for (const s of sections) dlg.append(s.stack, s.dots);
+  dlg.append(moreLink, nav);
   root.append(dlg);
 
-  let i = 0, closed = false;
+  let si = 0, i = 0, closed = false;
+  const cur = () => sections[si];
   function render(dir = 0) {
-    const card = cards[i];
-    cards.forEach((c, k) => {
+    const s = cur(), n = s.cards.length, last = i === n - 1, extra = si > 0;
+    sections.forEach((x, k) => { x.stack.hidden = k !== si; x.dots.hidden = k !== si; });
+    s.cards.forEach((c, k) => {
       const on = k === i;
       c.classList.toggle('fg-on', on);
       c.setAttribute('aria-hidden', on ? 'false' : 'true');
     });
-    dlg.setAttribute('aria-labelledby', `fg-title-${uid}-${i}`);
-    count.textContent = `${i + 1} / ${pages.length}`;
-    dotEls.forEach((d, k) => d.setAttribute('aria-current', k === i ? 'step' : 'false'));
-    back.style.visibility = i === 0 ? 'hidden' : 'visible';
-    const last = i === pages.length - 1;
+    dlg.setAttribute('aria-labelledby', `fg-title-${uid}-${s.key}${i}`);
+    count.textContent = `${s.name ? `${s.name} · ` : ''}${i + 1} / ${n}`;
+    s.dotEls.forEach((d, k) => d.setAttribute('aria-current', k === i ? 'step' : 'false'));
+    // Back on the first extra card returns to the last main card.
+    back.style.visibility = i === 0 && !extra ? 'hidden' : 'visible';
     next.textContent = last ? doneLabel : 'Next';
     next.classList.toggle('fg-done', last);
+    // In the extra cards the main guide is already done, so Skip reads as Done.
+    // (s.name is the section label; the main set only has one when opened as a labelled set.)
+    // The same goes for a labelled set opened on its own (More tips from a menu).
+    skip.textContent = extra || s.name ? 'Done' : 'Skip';
     skip.style.visibility = last ? 'hidden' : 'visible';
+    // In the main section the link keeps its space on every card, so the guide does not change height on
+    // the last one. The More tips section has its own height and no link.
+    moreLink.hidden = sections.length < 2 || extra;
+    moreLink.style.visibility = last && !extra ? 'visible' : 'hidden';
+    const card = s.cards[i];
     if (dir && !reduced) {
       card.classList.remove('fg-in-l', 'fg-in-r');
       void card.offsetWidth;
       card.classList.add(dir > 0 ? 'fg-in-r' : 'fg-in-l');
     }
+    // A control that just got hidden (Back, the More tips link) drops focus to <body>, where the game's
+    // own key handlers would see the keys. Pull focus back onto the guide.
+    const a = document.activeElement;
+    if (dlg.open && a !== dlg && (!dlg.contains(a) || !a.offsetParent || getComputedStyle(a).visibility === 'hidden')) {
+      dlg.focus({ preventScroll: true });
+    }
   }
   function go(k) {
-    k = Math.max(0, Math.min(pages.length - 1, k));
+    const n = cur().cards.length;
+    if (k < 0 && si > 0) { si -= 1; i = cur().cards.length - 1; render(-1); return; }
+    k = Math.max(0, Math.min(n - 1, k));
     if (k === i) return;
     const dir = Math.sign(k - i);
     i = k;
     render(dir);
+  }
+  function openMore() {
+    if (sections.length < 2) return;
+    si = 1; i = 0;
+    render(1);
   }
   function close(finished = false) {
     if (closed) return;
@@ -102,9 +138,10 @@ export function openGuide(root, { pages, className = '', doneLabel = 'Play', onC
   }
 
   back.addEventListener('click', () => go(i - 1));
-  next.addEventListener('click', () => (i === pages.length - 1 ? close(true) : go(i + 1)));
-  skip.addEventListener('click', () => close(false));
-  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(false); });
+  next.addEventListener('click', () => (i === cur().cards.length - 1 ? close(true) : go(i + 1)));
+  skip.addEventListener('click', () => close(si > 0));
+  moreLink.addEventListener('click', openMore);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(si > 0); });
 
   // Arrow keys page; captured so the game underneath does not also react.
   function onKey(e) {

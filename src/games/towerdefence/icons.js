@@ -22,6 +22,7 @@ export const ICON = {
   nova: svg('<circle cx="16" cy="16" r="5" fill="#fff"/><circle cx="16" cy="16" r="11" fill="none" stroke="#c8a2ff" stroke-width="3"/><path d="M16 1v5M16 26v5M1 16h5M26 16h5" stroke="#c8a2ff" stroke-width="2.5"/>'),
   swap: svg('<path d="M6 11h18l-5-5M26 21H8l5 5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'),
   skull: svg('<path d="M16 4C9 4 5 8.5 5 14c0 3.5 1.8 6 4 7.2V26h14v-4.8c2.2-1.2 4-3.7 4-7.2C27 8.5 23 4 16 4z" fill="#e8dcc8"/><circle cx="11.5" cy="15" r="3" fill="#20242c"/><circle cx="20.5" cy="15" r="3" fill="#20242c"/>'),
+  info: svg('<circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="16" cy="10" r="2" fill="currentColor"/><rect x="14.2" y="14" width="3.6" height="10" rx="1.5" fill="currentColor"/>'),
   star: svg('<path d="M16 3l3.8 8.3 9 1-6.7 6.1 1.9 8.9L16 22.8 8 27.3l1.9-8.9L3.2 12.3l9-1z" fill="#f0b44c"/>'),
 };
 
@@ -56,3 +57,6 @@ export function enemyIcon(type) {
   return svg(`<g fill="${e.color}" stroke="#0e1420" stroke-width="1.5">${SHAPE[e.shape] || SHAPE.box}</g>${e.stealth ? '<circle cx="16" cy="16" r="13" fill="none" stroke="#b0a0ff" stroke-dasharray="3 3" stroke-width="2"/>' : ''}${extra}`);
 }
 export const towerColor = (type) => TOWERS[type].color;
+
+// The crystal core as a flat gem centred on cx, cy (title emblem and guide art).
+export const coreGem = (cx, cy, r) => `<path d="M${cx} ${cy - r}l${r * 0.75} ${r}-${r * 0.75} ${r}-${r * 0.75}-${r}z" fill="#7fd8ff"/><path d="M${cx} ${cy - r}l${r * 0.3} ${r}-${r * 0.3} ${r}z" fill="#d8f6ff"/>`;

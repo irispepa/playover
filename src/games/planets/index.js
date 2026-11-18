@@ -2,8 +2,8 @@ import { arcade, button, node } from '../../shell/arcade.js';
 import { randomSeed } from '../../shell/rng.js';
 import { newGame, move, undo, recycle, validSave, planet, PLANETS } from './sim.js';
 import { createBoard } from './render.js';
-import { openGuide } from '../../shell/guide.js';
-import { guidePages } from './guide.js';
+import { openGuide, MORE_LABEL } from '../../shell/guide.js';
+import { guidePages, morePages } from './guide.js';
 export default {
   start(ctx) {
     const a = arcade(ctx, {
@@ -149,6 +149,9 @@ export default {
       }
       content.append(node('p', '', 'Each pair becomes the next planet. Reach 2048 to make a Sun; keep merging for a higher score.'));
       a.modal('The pocket atlas', content, [{
+        label: MORE_LABEL,
+        fn: moreTips
+      }, {
         label: 'Back to space',
         primary: true
       }]);
@@ -159,7 +162,21 @@ export default {
       guide = openGuide(ctx.root, {
         className: 'planets-guide',
         pages: guidePages(),
+        more: morePages(),
         doneLabel: 'Start exploring',
+        onClose() {
+          guide = null;
+        }
+      });
+    }
+    // The extra cards on their own, from the atlas. Same guide slot, so slides and swipes stay blocked.
+    function moreTips() {
+      guide?.close();
+      guide = openGuide(ctx.root, {
+        className: 'planets-guide',
+        pages: morePages(),
+        label: MORE_LABEL,
+        doneLabel: 'Got it',
         onClose() {
           guide = null;
         }

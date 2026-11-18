@@ -118,7 +118,7 @@ export default {
       if (!store.get('seenHelp', false)) {
         store.set('seenHelp', true);
         game.coachAfterHelp = coach;
-        ui.showModal('help', { page: 0, first: true });
+        ui.openHelp(true);
       } else if (coach) startCoach();
     };
     game.continueGame = () => {
@@ -131,13 +131,14 @@ export default {
     game.exit = () => { save(); ctx.exit(); };
     game.endless = () => { if (game.s) { startEndless(game.s); save(); } };
 
-    // A modal and a coach mark can be up at once; the game stays paused while either one is.
-    const pauseBy = { modal: false, coach: false };
+    // A modal, the How to play guide (which can sit over a modal) and a coach mark each hold their own pause;
+    // the game stays paused while any one is up.
+    const pauseBy = { modal: false, help: false, coach: false };
     game.onModal = (open, kind) => {
-      pauseBy[kind === 'coach' ? 'coach' : 'modal'] = open && kind !== 'title' && kind !== 'new';
-      game.modalPause = pauseBy.modal || pauseBy.coach;
+      pauseBy[kind === 'coach' || kind === 'help' ? kind : 'modal'] = open && kind !== 'title' && kind !== 'new';
+      game.modalPause = pauseBy.modal || pauseBy.help || pauseBy.coach;
       if (open && game.live) save();
-      if (!open && !game.live && kind !== 'new' && kind !== 'confirmNew' && kind !== 'coach') ui.showModal('title');
+      if (!open && !game.live && kind !== 'new' && kind !== 'confirmNew' && kind !== 'coach' && kind !== 'help') ui.showModal('title');
       if (!open && kind === 'help' && game.coachAfterHelp && game.live) { game.coachAfterHelp = false; startCoach(); }
     };
     function startCoach() {
@@ -301,7 +302,7 @@ export default {
       }
     }
 
-    ui = createUI(stage.ui, game);
+    ui = createUI(stage.ui, game, ctx.root);
     const input = createInput(stage.canvas, view, {
       onTap,
       getBounds: () => {

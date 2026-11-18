@@ -1,5 +1,5 @@
 // How to play cards for Reef Relay. The art redraws the board's own tiles in flat SVG, in the scene's colours.
-import { DIRS } from './sim.js';
+import { DIRS, rotate } from './sim.js';
 
 const C = {
   board: '#21515b', tile: '#39717b', ceramic: '#8bb3ad', wet: '#8ef1d3', dry: '#315d6a',
@@ -71,6 +71,59 @@ const toolsArt = svg(
   btnBox(136) + tile(146, 42, 36, 6) + `<circle cx="164" cy="60" r="21" fill="none" stroke="${C.ring}" stroke-width="2.5"/>`
 );
 
+// More tips, card 1: tap "A little help" a second time and it turns the glowing channel into place.
+const twiceArt = svg(
+  spring(0, 44, 12, 12) + tile(6, 27, 34, 10, true) + tile(42, 27, 34, 5) +
+  `<circle cx="59" cy="44" r="21" fill="none" stroke="${C.ring}" stroke-width="2.5"/>` +
+  `<path d="M86 44h9" stroke="${C.ink}" stroke-width="3" stroke-linecap="round" opacity=".7"/>` + arrowHead(102, 44, 0, C.ink) +
+  spring(110, 44, 12, 12) + tile(116, 27, 34, 10, true) + tile(152, 27, 34, 10, true) +
+  `<rect x="58" y="78" width="84" height="36" rx="10" fill="${C.panel}" stroke="${C.line}" stroke-width="1.5"/>` +
+  tile(68, 85, 22, 6) + `<circle cx="79" cy="96" r="14" fill="none" stroke="${C.ring}" stroke-width="2"/>` +
+  `<circle cx="122" cy="96" r="14" fill="none" stroke="${C.ink}" stroke-width="1.5" opacity=".45"/>` + finger(122, 96)
+);
+
+// Card 2: from reef 3 a channel on the route can split three ways. The side branch may end loose; that is fine.
+const branchArt = svg(
+  `<rect x="4" y="22" width="166" height="72" rx="8" fill="${C.board}"/>` +
+  tile(40, 26, 30, 6, true) + tile(72, 26, 30, 5) +
+  tile(8, 58, 30, 10, true) + tile(40, 58, 30, 11, true) + tile(72, 58, 30, 10, true) + tile(104, 58, 30, 10, true) + tile(136, 58, 30, 10, true) +
+  `<circle cx="55" cy="73" r="20" fill="none" stroke="${C.ring}" stroke-width="2.5"/>` +
+  pearl(87, 73, 4.5) + pearl(151, 73, 4.5) +
+  spring(-6, 73, 14, 12) + shell(185, 79, 12)
+);
+
+// Card 3: a restored reef leads on to the next one, a fresh tangle of channels.
+const nextArt = (() => {
+  const s = 22, gap = 1.5, route = [3, 0, 1, 4, 7, 8, 5], pearls = [1, 4, 8];
+  const dir = (a, b) => DIRS.find(([dx, dy]) => b % 3 - a % 3 === dx && Math.floor(b / 3) - Math.floor(a / 3) === dy)[2];
+  const solved = [3, 6, 12, 12, 10, 10, 9, 9, 10];
+  route.forEach((p, i) => { solved[p] = (i ? dir(p, route[i - 1]) : 8) | (i < route.length - 1 ? dir(p, route[i + 1]) : 2); });
+  const scrambled = solved.map((m, i) => rotate(m, [1, 2, 1, 3, 1, 1, 2, 1, 3][i]));
+  function mini(ox, oy, masks, wet) {
+    const at = i => [ox + i % 3 * (s + gap), oy + Math.floor(i / 3) * (s + gap)];
+    let out = `<rect x="${ox - 4}" y="${oy - 4}" width="${3 * s + 2 * gap + 8}" height="${3 * s + 2 * gap + 8}" rx="7" fill="${C.board}"/>`;
+    masks.forEach((m, i) => { out += tile(...at(i), s, m, wet && route.includes(i)); });
+    for (const p of pearls) {
+      const [x, y] = at(p);
+      out += wet ? pearl(x + s / 2, y + s / 2, 4) : `<circle cx="${x + s / 2}" cy="${y + s / 2}" r="4" fill="${C.pearl}" opacity=".45"/>`;
+    }
+    return out;
+  }
+  const w = 3 * s + 2 * gap;
+  return svg(
+    `<circle cx="${18 + w / 2}" cy="60" r="${w / 2 + 14}" fill="${C.wet}" opacity=".12"/>` +
+    mini(18, 60 - w / 2, solved, true) + mini(182 - w, 60 - w / 2, scrambled, false) +
+    `<path d="M92 60h10" stroke="${C.ink}" stroke-width="3" stroke-linecap="round" opacity=".7"/>` + arrowHead(109, 60, 0, C.ink)
+  );
+})();
+
+// Optional "More tips" cards, reached from the link on the last card.
+export const MORE = [
+  { title: 'Tap help twice', art: twiceArt, points: ['Tap “A little help” again to turn the glowing channel into place.', 'It counts as a turn, and Undo can take it back.'] },
+  { title: 'Branches from reef 3', art: branchArt, points: ['From reef 3, some channels on the route split three ways.', 'Loose ends are fine. Only the pearls and the shell need water.'] },
+  { title: 'Take your time', art: nextArt, points: ['Every reef can be solved. There is no timer or turn limit.', 'Your reef saves after each turn. Restore it to reach the next.'] }
+];
+
 export const GUIDE = {
   className: 'reef-guide',
   doneLabel: 'Let it flow',
@@ -78,5 +131,6 @@ export const GUIDE = {
     { title: 'Turn the channels', art: turnArt, points: ['Tap a coral channel to rotate it.', 'Line up the openings so water flows through.'] },
     { title: 'Light all three pearls', art: routeArt, points: ['Guide water from the left spring to the right shell.', 'It must pass through every pearl on the way.'] },
     { title: 'Turn, undo, get help', art: toolsArt, points: ['The turn button switches clockwise or anticlockwise. Undo takes a turn back.', '“A little help” shows a useful channel, as often as you like.'] }
-  ]
+  ],
+  more: MORE
 };
